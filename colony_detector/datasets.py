@@ -12,12 +12,14 @@
 * **Counts only** - a ``counts.csv`` with ``image,count`` columns.
 
 The split (train / valid / test) is taken from the path when it contains
-one of those folder names, so a provided test split stays held out.
+one of those folder names, so a provided test split stays held out. Other
+samples get a deterministic 80/10/10 split by file name (``auto_split``).
 """
 
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
 from collections.abc import Iterator
 from dataclasses import dataclass, field
@@ -144,7 +146,20 @@ def _yolo(root: Path) -> Iterator[Sample]:
         yield Sample(img, boxes=boxes, split=_split_of(img))
 
 
-def load_dataset(root: str | Path) -> list[Sample]:
+def auto_split(key: str, valid: float = 0.1, test: float = 0.1) -> str:
+    """Deterministic split from a sample's name: the same plate always lands
+    in the same split, run after run and machine after machine."""
+    h = int(hashlib.sha1(key.encode()).hexdigest()[:8], 16) / 0xFFFFFFFF
+    if h < test:
+        return "test"
+    if h < test + valid:
+        return "valid"
+    return "train"
+
+
+def load_dataset(root: str | Path, split_missing: bool = True) -> list[Sample]:
+    """Load every labelled sample under ``root``. Samples whose path names no
+    split get a deterministic 80/10/10 train/valid/test split."""
     root = Path(root)
     samples: dict[Path, Sample] = {}
 
@@ -190,4 +205,9 @@ def load_dataset(root: str | Path) -> list[Sample]:
                 img = _find_image(c.parent, row["image"])
                 if img is not None and img not in samples:
                     samples[img] = Sample(img, count=int(float(row["count"])), split=_split_of(img))
-    return sorted(samples.values(), key=lambda s: str(s.image))
+    out = sorted(samples.values(), key=lambda s: str(s.image))
+    if split_missing:
+        for smp in out:
+            if smp.split is None:
+                smp.split = auto_split(smp.image.stem)
+    return out

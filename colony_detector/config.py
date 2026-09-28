@@ -113,6 +113,8 @@ class Settings:
     # plate is resized to 640 px, so plates are cut into overlapping tiles).
     tile_size: int = field(default_factory=lambda: _env_int("CD_TILE_SIZE", 640))
     tile_overlap: float = field(default_factory=lambda: _env_float("CD_TILE_OVERLAP", 0.25))
+    # Plate resize factor before tiling; must match training (--scale).
+    tile_scale: float = field(default_factory=lambda: _env_float("CD_TILE_SCALE", 1.0))
     detector_conf: float = field(default_factory=lambda: _env_float("CD_DETECTOR_CONF", 0.20))
     # DETR-style scores are calibrated differently from YOLO's: 0.4 gave the
     # lowest count error for RF-DETR on held-out plates (0.2 over-counts).

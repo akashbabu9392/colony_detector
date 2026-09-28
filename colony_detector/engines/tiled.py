@@ -80,12 +80,15 @@ class TiledBoxEngine(Engine):
     weight = 1.0
 
     def __init__(self, tile_size: int = 640, overlap: float = 0.25, conf: float = 0.2,
-                 device: str = "", global_pass: bool = True):
+                 device: str = "", global_pass: bool = True, tile_scale: float = 1.0):
         self.tile_size = tile_size
         self.overlap = overlap
         self.conf = conf
         self.device = device
         self.global_pass = global_pass
+        # Resize the plate by this factor before tiling. Must match the
+        # --scale the detector was trained with (build_training_set.py).
+        self.tile_scale = tile_scale
 
     def _predict(self, tiles: list[np.ndarray]) -> list[list[RawBox]]:
         """BGR tiles -> boxes in tile pixel coordinates."""
@@ -97,6 +100,9 @@ class TiledBoxEngine(Engine):
         x0, y0 = max(0, int(plate.cx - R)), max(0, int(plate.cy - R))
         x1, y1 = min(W, int(math.ceil(plate.cx + R))), min(H, int(math.ceil(plate.cy + R)))
         crop = bgr[y0:y1, x0:x1]
+        ts = self.tile_scale
+        if ts != 1.0:
+            crop = cv2.resize(crop, None, fx=ts, fy=ts, interpolation=cv2.INTER_AREA)
         ch, cw = crop.shape[:2]
 
         tiles = make_tiles(cw, ch, self.tile_size, self.overlap)
@@ -115,6 +121,8 @@ class TiledBoxEngine(Engine):
                     boxes.append((bx0 / f, by0 / f, bx1 / f, by1 / f, c, n))
 
         boxes = merge_boxes(boxes)
+        if ts != 1.0:
+            boxes = [(bx0 / ts, by0 / ts, bx1 / ts, by1 / ts, c, n) for bx0, by0, bx1, by1, c, n in boxes]
         roi_r = ctx.get("roi_radius_px", 0.97 * R)
         rc = ctx.get("roi_center", (plate.cx, plate.cy))
         dets = []

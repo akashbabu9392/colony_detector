@@ -112,7 +112,19 @@ def collect(args):
         yield f"synth_{i:05d}", img, boxes, None
 
 
-def tile_plate(img, boxes, tile: int, overlap: float, empty_keep: float, rng: random.Random):
+def tile_plate(img, boxes, tile: int, overlap: float, empty_keep: float, rng: random.Random,
+               scale: float = 1.0, max_box_frac: float = 0.8, global_min_frac: float = 0.3):
+    """Yields (image, labels, w, h) training images for one plate:
+
+    * native-detail tiles (after resizing the plate by ``scale``) labelled
+      with every colony that fits in a tile; colonies larger than
+      ``max_box_frac * tile`` are left to the whole-plate view instead of
+      being cut into misleading fragments;
+    * one whole-plate image resized to ``tile`` px, labelled with colonies
+      at least ``global_min_frac * tile`` (scaled px) big. This mirrors the
+      detector's inference: tiles for small colonies, a global pass that
+      keeps only big detections.
+    """
     plate = find_plate(img)
     H, W = img.shape[:2]
     R = plate.radius
@@ -123,16 +135,24 @@ def tile_plate(img, boxes, tile: int, overlap: float, empty_keep: float, rng: ra
         # Already-cropped plates or image patches: use the whole frame.
         x0, y0, x1, y1 = 0, 0, W, H
     crop = img[y0:y1, x0:x1]
-    b = np.array([(bx0 - x0, by0 - y0, bx1 - x0, by1 - y0, c) for bx0, by0, bx1, by1, c in boxes],
-                 dtype=np.float64).reshape(-1, 5)
-    for tx0, ty0, tx1, ty1 in make_tiles(crop.shape[1], crop.shape[0], tile, overlap):
+    if scale != 1.0:
+        crop = cv2.resize(crop, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
+    b = np.array([((bx0 - x0) * scale, (by0 - y0) * scale, (bx1 - x0) * scale, (by1 - y0) * scale, c)
+                  for bx0, by0, bx1, by1, c in boxes], dtype=np.float64).reshape(-1, 5)
+    ch, cw = crop.shape[:2]
+    pcx, pcy = (plate.cx - x0) * scale, (plate.cy - y0) * scale
+    size = np.maximum(b[:, 2] - b[:, 0], b[:, 3] - b[:, 1]) if len(b) else np.zeros(0)
+
+    for tx0, ty0, tx1, ty1 in make_tiles(cw, ch, tile, overlap):
         tw, th = tx1 - tx0, ty1 - ty0
         # Skip tiles that are almost entirely outside the dish.
-        ccx, ccy = (tx0 + tx1) / 2 + x0, (ty0 + ty1) / 2 + y0
-        if plate.found and np.hypot(ccx - plate.cx, ccy - plate.cy) > R + 0.5 * tile:
+        ccx, ccy = (tx0 + tx1) / 2, (ty0 + ty1) / 2
+        if plate.found and np.hypot(ccx - pcx, ccy - pcy) > R * scale + 0.5 * tile:
             continue
         labels = []
-        for bx0, by0, bx1, by1, c in b:
+        for (bx0, by0, bx1, by1, c), sz in zip(b, size):
+            if sz > max_box_frac * tile:
+                continue
             cx, cy = (bx0 + bx1) / 2, (by0 + by1) / 2
             if not (tx0 <= cx < tx1 and ty0 <= cy < ty1):
                 continue
@@ -144,6 +164,14 @@ def tile_plate(img, boxes, tile: int, overlap: float, empty_keep: float, rng: ra
         if not labels and rng.random() > empty_keep:
             continue
         yield crop[ty0:ty1, tx0:tx1], labels, tw, th
+
+    if len(make_tiles(cw, ch, tile, overlap)) > 1:
+        f = tile / max(cw, ch)
+        small = cv2.resize(crop, None, fx=f, fy=f, interpolation=cv2.INTER_AREA)
+        labels = [(int(c), bx0 * f, by0 * f, bx1 * f, by1 * f)
+                  for (bx0, by0, bx1, by1, c), sz in zip(b, size) if sz >= global_min_frac * tile]
+        if labels or rng.random() < empty_keep:
+            yield small, labels, small.shape[1], small.shape[0]
 
 
 def main() -> int:
@@ -159,6 +187,10 @@ def main() -> int:
     ap.add_argument("--overlap", type=float, default=0.2)
     ap.add_argument("--val", type=float, default=0.15, help="fraction of plates for validation")
     ap.add_argument("--empty-keep", type=float, default=0.3, help="share of colony-free tiles to keep")
+    ap.add_argument("--scale", type=float, default=1.0,
+                    help="resize plates before tiling (serve with the same CD_TILE_SCALE)")
+    ap.add_argument("--max-box-frac", type=float, default=0.8,
+                    help="colonies bigger than this share of a tile are learnt from the whole-plate view")
     ap.add_argument("--coco", action="store_true", help="also write COCO json (for RF-DETR)")
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
@@ -174,8 +206,9 @@ def main() -> int:
         split = src_split if src_split in ("train", "valid") else ("valid" if rng.random() < args.val else "train")
         (out / "images" / split).mkdir(parents=True, exist_ok=True)
         (out / "labels" / split).mkdir(parents=True, exist_ok=True)
-        for k, (tile, labels, tw, th) in enumerate(tile_plate(img, boxes, args.tile, args.overlap,
-                                                                args.empty_keep, rng)):
+        views = tile_plate(img, boxes, args.tile, args.overlap, args.empty_keep, rng,
+                           scale=args.scale, max_box_frac=args.max_box_frac)
+        for k, (tile, labels, tw, th) in enumerate(views):
             stem = f"{name}_{k:03d}"
             cv2.imwrite(str(out / "images" / split / f"{stem}.jpg"), tile, [cv2.IMWRITE_JPEG_QUALITY, 95])
             with open(out / "labels" / split / f"{stem}.txt", "w") as fh:

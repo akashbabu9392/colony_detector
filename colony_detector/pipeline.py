@@ -25,7 +25,8 @@ log = logging.getLogger("colony_detector")
 
 def build_engines(settings: Settings) -> list[Engine]:
     tiled = {"tile_size": settings.tile_size, "overlap": settings.tile_overlap,
-             "conf": settings.detector_conf, "device": settings.device}
+             "conf": settings.detector_conf, "device": settings.device,
+             "tile_scale": settings.tile_scale}
     engines: list[Engine] = []
     for name in settings.engine_list():
         if name == "classical":
