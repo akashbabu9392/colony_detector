@@ -109,13 +109,19 @@ about 15% of them touching, fuzzy colonies, bubbles, pen marks, dust,
 lighting gradients, blur, noise, and both transmitted- and reflected-light
 styles. The counts below come from seeds not used during tuning.
 
-| configuration | count MAPE | MAE | within ±10 % | precision | recall | F1 |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| classical only (no training) | 11.1 % | 12.9 | 45 % | 0.99 | 0.87 | 0.92 |
-| YOLO11n, 12 CPU epochs on 60 synthetic plates (smoke test) | 4.2 % | 4.5 | 95 % | 0.96 | 0.94 | 0.95 |
-| classical + YOLO11n, fusion tuned on 20 other plates | **3.2 %** | **3.2** | 95 % | 0.95 | 0.94 | 0.95 |
+| configuration | count MAPE | MAE | within ±5 % | within ±10 % | precision | recall | F1 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| classical only (no training) | 11.1 % | 12.9 | 10 % | 45 % | 0.99 | 0.87 | 0.92 |
+| YOLO11n, 12 CPU epochs on 60 synthetic plates | 4.2 % | 4.5 | 65 % | 95 % | 0.96 | 0.94 | 0.95 |
+| **RF-DETR Nano, 8 CPU epochs on the same plates** | **1.5 %** | **1.9** | **95 %** | **100 %** | 0.96 | 0.96 | **0.96** |
+| classical + RF-DETR (fusion defaults) | 1.6 % | 2.0 | 100 % | 100 % | 0.95 | 0.95 | 0.95 |
 
-The YOLO rows are **in-domain** (trained and tested on synthetic plates),
+On the same validation tiles RF-DETR reached mAP50 0.999 / mAP50-95 0.83
+against YOLO11n's 0.73 / 0.44, which is why it is the recommended model.
+RF-DETR needs `CD_RFDETR_CONF` around 0.4: at YOLO's usual 0.2 it
+over-counts (8.9 % error).
+
+The learned rows are **in-domain** (trained and tested on synthetic plates),
 so they show that the tiling, fusion and tuning machinery works. They are
 not a claim about real plates. The regression tests in
 `tests/test_counting.py` fail if classical accuracy drops.
@@ -242,7 +248,8 @@ fails CI.
 | `CD_MODELS_DIR` | `./models` | where weights and `fusion.json` are looked up |
 | `CD_YOLO_WEIGHTS` / `CD_RFDETR_WEIGHTS` / `CD_CELLPOSE_WEIGHTS` | auto-detected | explicit weight paths |
 | `CD_TILE_SIZE` / `CD_TILE_OVERLAP` | 640 / 0.25 | tiled inference (must match training) |
-| `CD_DETECTOR_CONF` | 0.2 | minimum box-detector confidence |
+| `CD_DETECTOR_CONF` | 0.2 | minimum box-detector confidence (YOLO, Grounding DINO) |
+| `CD_RFDETR_CONF` | 0.4 | minimum RF-DETR confidence |
 | `CD_FUSE_THRESHOLD` | 0.25 (or `fusion.json`) | consensus threshold |
 | `CD_OUTLIER_RATIO` | 2.5 | out-of-domain guard |
 | `CD_TNTC_LIMIT` | 300 | too-numerous-to-count limit |

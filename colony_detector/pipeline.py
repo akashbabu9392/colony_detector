@@ -39,7 +39,8 @@ def build_engines(settings: Settings) -> list[Engine]:
             from colony_detector.engines.tiled import RFDETREngine
             if not settings.rfdetr_weights:
                 raise EngineUnavailable("rfdetr requested but CD_RFDETR_WEIGHTS is not set")
-            engines.append(RFDETREngine(settings.rfdetr_weights, size=settings.rfdetr_size, **tiled))
+            engines.append(RFDETREngine(settings.rfdetr_weights, size=settings.rfdetr_size,
+                                        **{**tiled, "conf": settings.rfdetr_conf}))
         elif name == "cellpose":
             from colony_detector.engines.cellpose_engine import CellposeEngine
             if not settings.cellpose_weights:
