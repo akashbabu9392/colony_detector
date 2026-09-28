@@ -6,7 +6,8 @@
 RF-DETR uses a DINOv2 backbone; it is the recommended learned engine.
 ``--resolution`` defaults to the tile size (640) so small colonies are not
 downscaled. Needs a GPU in practice (a Colab T4 is fine for small/medium).
-The best checkpoint is copied to ``models/rfdetr_tiles.pth``.
+The best checkpoint is copied to ``models/rfdetr_tiles.pth``. An interrupted
+run continues with ``--resume <output>/last.ckpt`` (same arguments).
 """
 
 from __future__ import annotations
@@ -30,6 +31,7 @@ def main() -> int:
     ap.add_argument("--lr", type=float, default=1e-4)
     ap.add_argument("--output", default="runs/rfdetr")
     ap.add_argument("--out", default=str(REPO / "models" / "rfdetr_tiles.pth"))
+    ap.add_argument("--resume", help="continue an interrupted run from its last.ckpt")
     args = ap.parse_args()
 
     import rfdetr
@@ -38,6 +40,8 @@ def main() -> int:
            "base": "RFDETRBase", "large": "RFDETRLarge"}[args.size]
     model = getattr(rfdetr, cls)(resolution=args.resolution)
     kw = {"device": args.device} if args.device else {}
+    if args.resume:
+        kw["resume"] = args.resume
     model.train(dataset_dir=args.dataset, epochs=args.epochs, batch_size=args.batch,
                 grad_accum_steps=args.grad_accum, lr=args.lr, output_dir=args.output, **kw)
     ckpts = sorted(Path(args.output).glob("checkpoint_best*.pth")) or sorted(Path(args.output).glob("*.pth"))
