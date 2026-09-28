@@ -1,10 +1,12 @@
 """Fine-tune RF-DETR on plate tiles (COCO format from build_training_set.py --coco).
 
-    pip install rfdetr
-    python tools/train_rfdetr.py --dataset datasets/tiles/coco --size base --epochs 60
+    pip install "rfdetr[train]"
+    python tools/train_rfdetr.py --dataset datasets/tiles/coco --size medium --epochs 60
 
-Needs a GPU in practice. The best checkpoint is copied to
-``models/rfdetr_tiles.pth`` for the service.
+RF-DETR uses a DINOv2 backbone; it is the recommended learned engine.
+``--resolution`` defaults to the tile size (640) so small colonies are not
+downscaled. Needs a GPU in practice (a Colab T4 is fine for small/medium).
+The best checkpoint is copied to ``models/rfdetr_tiles.pth``.
 """
 
 from __future__ import annotations
@@ -19,7 +21,9 @@ REPO = Path(__file__).resolve().parent.parent
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--dataset", default="datasets/tiles/coco")
-    ap.add_argument("--size", default="base", choices=["nano", "small", "medium", "base", "large"])
+    ap.add_argument("--size", default="medium", choices=["nano", "small", "medium", "base", "large"])
+    ap.add_argument("--resolution", type=int, default=640, help="must be divisible by the model's block size")
+    ap.add_argument("--device", default=None, help="cuda / cpu (default: auto)")
     ap.add_argument("--epochs", type=int, default=60)
     ap.add_argument("--batch", type=int, default=4)
     ap.add_argument("--grad-accum", type=int, default=4)
@@ -32,16 +36,17 @@ def main() -> int:
 
     cls = {"nano": "RFDETRNano", "small": "RFDETRSmall", "medium": "RFDETRMedium",
            "base": "RFDETRBase", "large": "RFDETRLarge"}[args.size]
-    model = getattr(rfdetr, cls)()
+    model = getattr(rfdetr, cls)(resolution=args.resolution)
+    kw = {"device": args.device} if args.device else {}
     model.train(dataset_dir=args.dataset, epochs=args.epochs, batch_size=args.batch,
-                grad_accum_steps=args.grad_accum, lr=args.lr, output_dir=args.output)
+                grad_accum_steps=args.grad_accum, lr=args.lr, output_dir=args.output, **kw)
     ckpts = sorted(Path(args.output).glob("checkpoint_best*.pth")) or sorted(Path(args.output).glob("*.pth"))
     if not ckpts:
         print("no checkpoint found in", args.output)
         return 1
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     shutil.copy(ckpts[0], args.out)
-    print(f"{ckpts[0]} -> {args.out}  (set CD_RFDETR_SIZE={args.size})")
+    print(f"{ckpts[0]} -> {args.out}")
     return 0
 
 

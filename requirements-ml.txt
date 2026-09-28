@@ -2,7 +2,7 @@
 -r requirements.txt
 torch>=2.2
 torchvision>=0.17
-ultralytics>=8.3        # YOLO11 tiled detector (CD_YOLO_WEIGHTS)
+ultralytics>=8.3        # YOLO11 tiled detector, second vote (CD_YOLO_WEIGHTS)
 cellpose>=3.0,<4        # Cellpose CPnet models (CD_CELLPOSE_WEIGHTS)
-# rfdetr>=1.2           # RF-DETR tiled detector (CD_RFDETR_WEIGHTS)
+rfdetr[train]>=1.7     # RF-DETR tiled detector, recommended (CD_RFDETR_WEIGHTS)
 # transformers>=4.51    # zero-shot Grounding DINO engine (CD_ENGINES=...,gdino)

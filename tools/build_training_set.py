@@ -5,6 +5,9 @@ the plate, exactly as colony_detector.engines.tiled runs them at inference.
 
 Label sources (combine freely):
 
+* ``--dataset DIR``: a labelled dataset in COCO, YOLO (Roboflow export),
+  AGAR or hand-count format, auto-detected (colony_detector/datasets.py).
+  Its own train/valid split is kept; its test split is left out.
 * ``--gold eval/gold --images data/plates``: hand counts from
   tools/hand_count.py (points + radius -> boxes).
 * ``--yolo-labels DIR --images data/plates``: existing YOLO txt labels for
@@ -67,7 +70,16 @@ def boxes_from_yolo(txt: Path, w: int, h: int):
 
 
 def collect(args):
-    """Yields (name, image, boxes)."""
+    """Yields (name, image, boxes, split or None)."""
+    if args.dataset:
+        from colony_detector.datasets import load_dataset
+
+        for smp in load_dataset(args.dataset):
+            if smp.boxes is None:
+                continue  # count-only images cannot train a detector
+            if smp.split == "test":
+                continue  # keep the provided test split held out for evaluate.py
+            yield smp.image.stem, read_image(smp.image), smp.boxes, smp.split
     if args.images:
         imgs = sorted(p for p in Path(args.images).rglob("*") if p.suffix.lower() in IMAGE_EXT)
         counter = None
@@ -92,20 +104,24 @@ def collect(args):
                 boxes = [(*d.xyxy, 1 if d.class_name == "fuzzy_colony" else 0)
                          for d in res.detections if d.count == 1 and d.confidence >= 0.5]
             if boxes is not None:
-                yield path.stem, img, boxes
+                yield path.stem, img, boxes, None
     for i in range(args.synthetic):
         img, gt = make_plate(20_000 + i)
         boxes = [(c["x"] - c["r"], c["y"] - c["r"], c["x"] + c["r"], c["y"] + c["r"], int(c["fuzzy"]))
                  for c in gt["colonies"]]
-        yield f"synth_{i:05d}", img, boxes
+        yield f"synth_{i:05d}", img, boxes, None
 
 
 def tile_plate(img, boxes, tile: int, overlap: float, empty_keep: float, rng: random.Random):
     plate = find_plate(img)
     H, W = img.shape[:2]
     R = plate.radius
-    x0, y0 = max(0, int(plate.cx - R)), max(0, int(plate.cy - R))
-    x1, y1 = min(W, int(plate.cx + R)), min(H, int(plate.cy + R))
+    if plate.found:
+        x0, y0 = max(0, int(plate.cx - R)), max(0, int(plate.cy - R))
+        x1, y1 = min(W, int(plate.cx + R)), min(H, int(plate.cy + R))
+    else:
+        # Already-cropped plates or image patches: use the whole frame.
+        x0, y0, x1, y1 = 0, 0, W, H
     crop = img[y0:y1, x0:x1]
     b = np.array([(bx0 - x0, by0 - y0, bx1 - x0, by1 - y0, c) for bx0, by0, bx1, by1, c in boxes],
                  dtype=np.float64).reshape(-1, 5)
@@ -113,7 +129,7 @@ def tile_plate(img, boxes, tile: int, overlap: float, empty_keep: float, rng: ra
         tw, th = tx1 - tx0, ty1 - ty0
         # Skip tiles that are almost entirely outside the dish.
         ccx, ccy = (tx0 + tx1) / 2 + x0, (ty0 + ty1) / 2 + y0
-        if np.hypot(ccx - plate.cx, ccy - plate.cy) > R + 0.5 * tile:
+        if plate.found and np.hypot(ccx - plate.cx, ccy - plate.cy) > R + 0.5 * tile:
             continue
         labels = []
         for bx0, by0, bx1, by1, c in b:
@@ -132,6 +148,7 @@ def tile_plate(img, boxes, tile: int, overlap: float, empty_keep: float, rng: ra
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--dataset", help="labelled dataset folder (COCO / YOLO / AGAR / points), auto-detected")
     ap.add_argument("--images")
     ap.add_argument("--gold", default="eval/gold")
     ap.add_argument("--yolo-labels")
@@ -153,8 +170,8 @@ def main() -> int:
     n_tiles = {"train": 0, "valid": 0}
     n_boxes = {"train": 0, "valid": 0}
     ann_id = 0
-    for name, img, boxes in collect(args):
-        split = "valid" if rng.random() < args.val else "train"
+    for name, img, boxes, src_split in collect(args):
+        split = src_split if src_split in ("train", "valid") else ("valid" if rng.random() < args.val else "train")
         (out / "images" / split).mkdir(parents=True, exist_ok=True)
         (out / "labels" / split).mkdir(parents=True, exist_ok=True)
         for k, (tile, labels, tw, th) in enumerate(tile_plate(img, boxes, args.tile, args.overlap,

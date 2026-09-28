@@ -12,6 +12,7 @@ Examples::
 
     python tools/evaluate.py --images data/plates --gold eval/gold
     python tools/evaluate.py --synthetic 60 --per-engine
+    python tools/evaluate.py --dataset data/colony_dataset --split test --per-engine
     python tools/evaluate.py --images data/plates --csv lab_counts.csv --engines classical,yolo
 
 Writes a per-image CSV and prints summary metrics (MAE, RMSE, bias, MAPE,
@@ -59,6 +60,18 @@ def load_cases(args) -> list[dict]:
                 case["count"] = csv_gold[img.stem]
             if "count" in case:
                 cases.append(case)
+    if args.dataset:
+        from colony_detector.datasets import load_dataset
+
+        for smp in load_dataset(args.dataset):
+            if args.split != "all" and smp.split != args.split:
+                continue
+            if smp.total is None:
+                continue
+            case = {"name": smp.image.name, "path": smp.image, "count": smp.total}
+            if smp.boxes is not None:
+                case["points"] = smp.points()
+            cases.append(case)
     for seed in range(args.synthetic):
         cases.append({"name": f"synthetic_{seed:04d}", "seed": 10_000 + seed})
     return cases
@@ -96,6 +109,8 @@ def run(counter: ColonyCounter, cases: list[dict]) -> tuple[list[dict], dict]:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--dataset", help="labelled dataset folder (COCO / YOLO / AGAR / points)")
+    ap.add_argument("--split", default="test", help="dataset split to evaluate: test | valid | train | all")
     ap.add_argument("--images", help="folder of plate images")
     ap.add_argument("--gold", default="eval/gold", help="folder of hand-count JSON files")
     ap.add_argument("--csv", help="CSV with image,count columns")

@@ -73,8 +73,8 @@ images, and flags `PLATE_NOT_FOUND`.
 
 | engine | what | weights |
 | --- | --- | --- |
-| `yolo` | Ultralytics YOLO11/v8 run on **native-resolution overlapping tiles** (SAHI-style) plus a low-res global pass for big colonies; seam duplicates merged by IoU + intersection-over-smaller | `models/yolo11s_tiles.pt` |
-| `rfdetr` | RF-DETR (transformer detector), same tiling | `models/rfdetr_tiles.pth` |
+| `rfdetr` (**recommended**) | RF-DETR: a real-time detection transformer on a **DINOv2 foundation-model backbone**. It transfers better than YOLO from small labelled sets, needs no NMS, and handles small, crowded objects well. Runs on **native-resolution overlapping tiles** (SAHI-style) plus a low-res global pass for big colonies; seam duplicates are merged by IoU + intersection-over-smaller | `models/rfdetr_tiles.pth` |
+| `yolo` | Ultralytics YOLO11/v8, same tiling: faster and lighter, a good second vote in the ensemble | `models/yolo11s_tiles.pt` |
 | `cellpose` | Cellpose CPnet instance segmentation, rescaled with the classical engine's colony-size estimate | `models/colony_project_model` |
 | `gdino` | zero-shot Grounding DINO (text prompt "bacterial colony"). This is the detector half of *Colony Grounded SAM2* (arXiv 2603.13393). Needs no training data, so it's handy for bootstrapping labels | HF model id `CD_GDINO_MODEL` |
 
@@ -151,7 +151,29 @@ with `bubble` as a negative class, is the way to close them.
 
 ---
 
-## Getting to production accuracy on your plates
+## Training on a labelled dataset (recommended path)
+
+Put the dataset in the repo (or anywhere) in any common format: a Roboflow /
+Ultralytics **YOLO** export, a **COCO** export, **AGAR** JSON, hand-count
+JSON, or a `counts.csv`. The format is auto-detected by
+`colony_detector/datasets.py`, and non-colony classes such as `bubble` or
+`debris` are dropped.
+
+```bash
+pip install -r requirements-ml.txt "rfdetr[train]"
+# 1. baseline of the training-free engine on the dataset's test split
+python tools/evaluate.py --dataset data/colony_dataset --split test
+# 2. tiles (the dataset's own train/valid split is kept, test stays held out)
+python tools/build_training_set.py --dataset data/colony_dataset --synthetic 200 --coco --out datasets/tiles
+# 3. train RF-DETR (GPU; a Colab T4 works) and optionally YOLO11 as a second vote
+python tools/train_rfdetr.py --dataset datasets/tiles/coco --size medium --epochs 60
+python tools/train_yolo.py --data datasets/tiles/data.yaml --model yolo11s.pt
+# 4. fit the fusion weights on the valid split, then report on test
+python tools/tune_fusion.py --dataset data/colony_dataset --split valid
+python tools/evaluate.py --dataset data/colony_dataset --split test --per-engine
+```
+
+## Getting to production accuracy on your own plates (no dataset yet)
 
 1. **Hand-count 50–100 plates** covering your media, lighting and densities.
    The model pre-fills its detections, so you only fix mistakes:
@@ -161,8 +183,8 @@ with `bubble` as a negative class, is the way to close them.
 3. **Build tiles**: `python tools/build_training_set.py --images data/plates --gold eval/gold --synthetic 300 --coco`
    (synthetic plates pre-train; train/val are split by plate, never by tile).
 4. **Train** (GPU / Colab, roughly 1–3 h):
-   `python tools/train_yolo.py --model yolo11s.pt` and optionally
-   `python tools/train_rfdetr.py --size base`. The weights land in `models/`.
+   `python tools/train_rfdetr.py --size medium` (recommended) and optionally
+   `python tools/train_yolo.py --model yolo11s.pt`. The weights land in `models/`.
 5. **Fit fusion** on a *separate* set of gold plates:
    `python tools/tune_fusion.py --images data/tune --gold eval/gold`
 6. **Evaluate** on held-out plates, per engine and ensemble:

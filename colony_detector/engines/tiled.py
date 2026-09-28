@@ -174,10 +174,13 @@ class YoloEngine(TiledBoxEngine):
 
 
 class RFDETREngine(TiledBoxEngine):
-    """RF-DETR (Roboflow) fine-tuned on plate tiles."""
+    """RF-DETR (Roboflow): a real-time DETR with a DINOv2 foundation backbone,
+    fine-tuned on plate tiles. Transformer detectors need no NMS and transfer
+    well from small labelled sets, which is why this is the recommended
+    learned engine."""
 
     name = "rfdetr"
-    weight = 1.2
+    weight = 1.3
 
     def __init__(self, weights: str, size: str = "base", **kw):
         super().__init__(**kw)
@@ -187,30 +190,32 @@ class RFDETREngine(TiledBoxEngine):
         self.class_names: list[str] = []
 
     def version(self) -> str:
-        return f"rfdetr-{self.size}:{file_digest(self.weights)}"
+        return f"rfdetr:{file_digest(self.weights)}"
 
     def load(self) -> None:
         try:
             import rfdetr
         except ImportError as exc:  # pragma: no cover
             raise EngineUnavailable("rfdetr is not installed (pip install rfdetr)") from exc
-        cls = {
-            "nano": "RFDETRNano", "small": "RFDETRSmall", "medium": "RFDETRMedium",
-            "base": "RFDETRBase", "large": "RFDETRLarge",
-        }.get(self.size.lower(), "RFDETRBase")
-        self.model = getattr(rfdetr, cls)(pretrain_weights=self.weights)
+        if hasattr(rfdetr.RFDETR, "from_checkpoint"):
+            # Restores size, resolution and class names from the checkpoint.
+            self.model = rfdetr.RFDETR.from_checkpoint(self.weights)
+        else:  # rfdetr < 1.7
+            cls = {"nano": "RFDETRNano", "small": "RFDETRSmall", "medium": "RFDETRMedium",
+                   "base": "RFDETRBase", "large": "RFDETRLarge"}.get(self.size.lower(), "RFDETRBase")
+            self.model = getattr(rfdetr, cls)(pretrain_weights=self.weights)
         names = getattr(self.model, "class_names", None)
         self.class_names = list(names.values()) if isinstance(names, dict) else list(names or [])
 
-    def _predict(self, tiles):  # pragma: no cover - needs trained weights
+    def _predict(self, tiles):
         if self.model is None:
             self.load()
-        from PIL import Image
-
+        rgb = [cv2.cvtColor(t, cv2.COLOR_BGR2RGB) for t in tiles]
+        dets = self.model.predict(rgb, threshold=min(self.conf, 0.1))
+        if not isinstance(dets, list):
+            dets = [dets]
         out = []
-        for t in tiles:
-            det = self.model.predict(Image.fromarray(cv2.cvtColor(t, cv2.COLOR_BGR2RGB)),
-                                     threshold=min(self.conf, 0.1))
+        for det in dets:
             boxes = []
             for i in range(len(det.xyxy)):
                 cid = int(det.class_id[i]) if det.class_id is not None else 0

@@ -6,6 +6,7 @@ when point labels exist). The winner is written to ``models/fusion.json``,
 which the service loads at start-up.
 
     python tools/tune_fusion.py --images data/plates --gold eval/gold
+    python tools/tune_fusion.py --dataset data/colony_dataset   # its valid split
     python tools/tune_fusion.py --synthetic 40          # sanity run
 
 Tune on plates that are NOT in your final evaluation set.
@@ -37,6 +38,8 @@ THRESHOLDS = [0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.5]
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--dataset", help="labelled dataset folder; tunes on its valid split by default")
+    ap.add_argument("--split", default="valid")
     ap.add_argument("--images")
     ap.add_argument("--gold", default="eval/gold")
     ap.add_argument("--csv")
