@@ -1,0 +1,6 @@
+-r requirements.txt
+pytest>=8.0
+httpx>=0.27
+ruff>=0.5
+# hand_count.py needs a GUI build of OpenCV:
+# opencv-python>=4.9

@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+runs/
+datasets/
+eval/results*.csv
+*.egg-info/
+# Model weights are large: keep them out of git (see models/README.md).
+models/*
+!models/README.md

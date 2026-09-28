@@ -1,0 +1,9 @@
+# Core service: training-free classical engine, fusion, API.
+numpy>=1.26
+opencv-python-headless>=4.9
+scipy>=1.11
+scikit-image>=0.22
+pillow>=10.0
+fastapi>=0.110
+uvicorn[standard]>=0.29
+python-multipart>=0.0.9
