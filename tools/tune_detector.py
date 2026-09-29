@@ -74,6 +74,8 @@ def main() -> int:
     ap.add_argument("--engine", default="rfdetr", choices=["rfdetr", "yolo", "gdino"])
     ap.add_argument("--cache", help="detection cache file (default: runs/<engine>_<split>_dets.pkl)")
     ap.add_argument("--out", default=None, help="default: <models_dir>/detector.json")
+    ap.add_argument("--conf-only", action="store_true",
+                    help="fit only the confidence cut-off (no size filters)")
     args = ap.parse_args()
 
     settings = Settings()
@@ -86,7 +88,9 @@ def main() -> int:
     cache = cache_detections(engine, samples, cache_path)
 
     best = None
-    for conf, min_px, big_px, big_conf in itertools.product(CONFS, MIN_SIZES, BIG_SIZES, BIG_CONFS):
+    grid = itertools.product(CONFS, [0], [0], [BIG_CONFS[0]]) if args.conf_only else \
+        itertools.product(CONFS, MIN_SIZES, BIG_SIZES, BIG_CONFS)
+    for conf, min_px, big_px, big_conf in grid:
         if not big_px and big_conf != BIG_CONFS[0]:
             continue
         cm, dm = score(cache, conf, min_px, big_px, big_conf)
