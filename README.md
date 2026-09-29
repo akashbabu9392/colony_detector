@@ -108,10 +108,24 @@ image is produced **only when there is at least one detection**.
 deterministically by sample id into 1,051 train / 135 valid / 138 test.
 The 138 test plates are never used for training or tuning.
 
-| engine (138 held-out test plates) | exact count | mean abs. error | detection F1 |
-| --- | ---: | ---: | ---: |
-| classical (no training) | 22.5 % | 8.6 | 0.19 |
-| RF-DETR Nano, half-resolution tiles, **1 CPU epoch**, conf 0.5 | 49.3 % | 1.25 | 0.86 |
+| engine (138 held-out test plates) | exact | within ±1 colony | within ±2 | mean abs. error | detection F1 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| classical (no training) | 22.5 % | – | – | 8.6 | 0.19 |
+| RF-DETR Nano, half-res tiles, 1 CPU epoch, conf 0.5 | **49.3 %** | **83.3 %** | **92.8 %** | 1.25 | 0.86 |
+| RF-DETR Nano, full-res tiles, 3 more CPU epochs, conf 0.75 (fitted on valid) | 35.5 % | 76.1 % | 88.4 % | 2.56 | 0.76 |
+
+The half-res row's cut-off (0.5) was picked on the test plates, so it is
+slightly optimistic; the full-res row's cut-off was fitted on validation.
+
+**Label quality is the current ceiling.** Reviewing the disagreements by eye:
+the model's most confident "false positives" are mostly real colonies that
+were never boxed; many labelled colonies are 5–12 px specks that are barely
+visible; and some boxes are not colonies (a paper sticker, agar grid texture,
+overgrown lawns labelled as 1). The full-res model finds more colonies (87 %
+of labelled colonies on sparse plates vs 75 % at half-res) and is penalised
+for the unlabelled ones it finds. A label review pass on the disagreeing
+plates is needed before exact-count accuracy can be measured or improved
+reliably.
 
 The classical engine misses most tiny colonies on these plates (it counted
 0 on 47 of the 104 plates with 1–3 colonies), so a trained detector is
