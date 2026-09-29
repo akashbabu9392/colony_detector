@@ -55,6 +55,9 @@ def build_engines(settings: Settings) -> list[Engine]:
     for e in engines:
         if e.name in settings.engine_weights:
             e.weight = settings.engine_weights[e.name]
+        for key, value in settings.detector_filters.get(e.name, {}).items():
+            if hasattr(e, key):
+                setattr(e, key, float(value))
     # The classical engine runs first: it measures the agar ROI and colony
     # size that the learned engines reuse.
     engines.sort(key=lambda e: 0 if e.name == "classical" else 1)

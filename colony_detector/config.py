@@ -157,6 +157,11 @@ class Settings:
         polarity = _env("CD_POLARITY")
         if polarity:
             self.classical.polarity = polarity
+        # Detector cut-offs fitted on validation plates by tools/tune_detector.py.
+        self.detector_filters: dict[str, dict] = {}
+        det = md / "detector.json"
+        if det.is_file():
+            self.detector_filters = json.loads(det.read_text())
         # Fusion weights fitted on gold plates by tools/tune_fusion.py.
         self.engine_weights: dict[str, float] = {}
         fusion = md / "fusion.json"

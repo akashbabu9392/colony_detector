@@ -80,7 +80,8 @@ class TiledBoxEngine(Engine):
     weight = 1.0
 
     def __init__(self, tile_size: int = 640, overlap: float = 0.25, conf: float = 0.2,
-                 device: str = "", global_pass: bool = True, tile_scale: float = 1.0):
+                 device: str = "", global_pass: bool = True, tile_scale: float = 1.0,
+                 min_size_px: float = 0.0, big_size_px: float = 0.0, big_conf: float = 0.0):
         self.tile_size = tile_size
         self.overlap = overlap
         self.conf = conf
@@ -89,6 +90,12 @@ class TiledBoxEngine(Engine):
         # Resize the plate by this factor before tiling. Must match the
         # --scale the detector was trained with (build_training_set.py).
         self.tile_scale = tile_scale
+        # Post-filters in image pixels, fitted on validation plates by
+        # tools/tune_detector.py: drop specks below min_size_px, and demand
+        # big_conf from boxes above big_size_px (scratches, plate-wide boxes).
+        self.min_size_px = min_size_px
+        self.big_size_px = big_size_px
+        self.big_conf = big_conf
 
     def _predict(self, tiles: list[np.ndarray]) -> list[list[RawBox]]:
         """BGR tiles -> boxes in tile pixel coordinates."""
@@ -129,6 +136,11 @@ class TiledBoxEngine(Engine):
         for bx0, by0, bx1, by1, c, n in boxes:
             cls = map_class(n)
             if cls is None or c < self.conf:
+                continue
+            size = ((bx1 - bx0) + (by1 - by0)) / 2.0  # same measure as tune_detector.py
+            if size < self.min_size_px:
+                continue
+            if self.big_size_px and size > self.big_size_px and c < self.big_conf:
                 continue
             cx, cy = (bx0 + bx1) / 2 + x0, (by0 + by1) / 2 + y0
             if math.hypot(cx - rc[0], cy - rc[1]) > roi_r:
