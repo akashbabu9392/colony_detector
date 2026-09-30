@@ -217,13 +217,18 @@ class RFDETREngine(TiledBoxEngine):
             import rfdetr
         except ImportError as exc:  # pragma: no cover
             raise EngineUnavailable("rfdetr is not installed (pip install rfdetr)") from exc
+        import torch
+
+        # A checkpoint trained on a GPU remembers "cuda"; serve on whatever
+        # this machine has unless CD_DEVICE says otherwise.
+        device = self.device or ("cuda" if torch.cuda.is_available() else "cpu")
         if hasattr(rfdetr.RFDETR, "from_checkpoint"):
             # Restores size, resolution and class names from the checkpoint.
-            self.model = rfdetr.RFDETR.from_checkpoint(self.weights)
+            self.model = rfdetr.RFDETR.from_checkpoint(self.weights, device=device)
         else:  # rfdetr < 1.7
             cls = {"nano": "RFDETRNano", "small": "RFDETRSmall", "medium": "RFDETRMedium",
                    "base": "RFDETRBase", "large": "RFDETRLarge"}.get(self.size.lower(), "RFDETRBase")
-            self.model = getattr(rfdetr, cls)(pretrain_weights=self.weights)
+            self.model = getattr(rfdetr, cls)(pretrain_weights=self.weights, device=device)
         names = getattr(self.model, "class_names", None)
         self.class_names = list(names.values()) if isinstance(names, dict) else list(names or [])
 

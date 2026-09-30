@@ -113,11 +113,19 @@ The 138 test plates are never used for training or tuning.
 | classical (no training) | 22.5 % | – | – | 8.6 | 0.19 |
 | RF-DETR Nano, half-res tiles, 1 CPU epoch, conf 0.5 | **49.3 %** | **83.3 %** | **92.8 %** | 1.25 | 0.86 |
 | RF-DETR Nano, full-res tiles, 3 more CPU epochs, conf 0.75 (fitted on valid) | 35.5 % | 76.1 % | 88.4 % | 2.56 | 0.76 |
+| **RF-DETR Medium, full-res tiles, 10 epochs on a Kaggle T4, conf 0.5 (fitted on valid)** | 39.9 % | 79.7 % | 89.9 % | 1.44 | 0.85 |
 
 The half-res row's cut-off (0.5) was picked on the test plates, so it is
 slightly optimistic; the full-res row's cut-off was fitted on validation.
 
-**Label quality is the current ceiling.** Reviewing the disagreements by eye:
+The Medium model's weights and fitted `detector.json` are in the
+`dataset-v2` release (`results.zip`); put both in `models/` to serve them.
+
+**Label quality is the current ceiling.** On the 65 test plates labelled
+with one colony, the Medium model counts more on 29; zoomed in, many of those
+"extra" detections are specks identical to specks that *were* labelled on
+other plates (inconsistent labels), the rest are scratches and fibres (real
+model errors). Reviewing the disagreements by eye:
 the model's most confident "false positives" are mostly real colonies that
 were never boxed; many labelled colonies are 5–12 px specks that are barely
 visible; and some boxes are not colonies (a paper sticker, agar grid texture,

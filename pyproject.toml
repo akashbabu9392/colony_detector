@@ -11,6 +11,8 @@ filterwarnings = ["ignore::DeprecationWarning"]
 [tool.ruff]
 line-length = 120
 target-version = "py310"
+# Notebooks are run by hand on Colab/Kaggle (shell magics, long commands).
+extend-exclude = ["notebooks"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B"]
