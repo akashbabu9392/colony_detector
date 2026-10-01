@@ -17,6 +17,14 @@ Original labels and model detections are compared plate by plate:
 
 decisions.json maps candidate id -> "colony" | "not" | "small" | "unsure".
 Unsure candidates are kept out of the count and listed in the gold file.
+Two more key forms correct what the automatic step got wrong:
+
+* ``"auto:<image name>:<index>"`` re-decides an auto-accepted colony (both
+  the label and the model agreed on it, e.g. both boxed sticker text);
+* ``"plate:<image name>": "tntc" | "overgrown"`` marks a plate whose exact
+  count is not meaningful (confluent lawn, overlapping moulds).
+
+``apply`` reads decisions.json, or merges every dec_*.json when it is absent.
 Sizes use the dish (90 mm) as the ruler.
 """
 
@@ -129,16 +137,36 @@ def _sheets(review: list[dict], plates: dict, out: Path, per_sheet: int = 40, ti
         cv2.imwrite(str(out / f"sheet_{start // per_sheet:02d}.jpg"), sheet, [cv2.IMWRITE_JPEG_QUALITY, 92])
 
 
+def _load_decisions(out: Path) -> dict[str, str]:
+    path = out / "decisions.json"
+    files = [path] if path.exists() else sorted(out.glob("dec_*.json"))
+    merged: dict[str, str] = {}
+    for f in files:
+        merged.update(json.loads(f.read_text()))
+    if not path.exists():
+        path.write_text(json.dumps(merged, indent=0, sort_keys=True))
+    return merged
+
+
 def apply(args) -> int:
     out = Path(args.out)
     data = json.loads((out / "candidates.json").read_text())
-    decisions = {int(k): v for k, v in json.loads((out / "decisions.json").read_text()).items()}
+    raw = _load_decisions(out)
+    decisions = {int(k): v for k, v in raw.items() if k.isdigit()}
+    auto_fix = {k[5:]: v for k, v in raw.items() if k.startswith("auto:")}
+    plate_flag = {k[6:]: v for k, v in raw.items() if k.startswith("plate:")}
     min_mm, review_mm = data["min_mm"], data["review_mm"]
     gold = Path(args.gold)
     gold.mkdir(parents=True, exist_ok=True)
     per_plate = {name: {"colonies": [], "small": [], "unsure": []} for name in data["plates"]}
     for name, p in data["plates"].items():
-        for c in p["auto"]:
+        for i, c in enumerate(p["auto"]):
+            fix = auto_fix.get(f"{name}:{i}")
+            if fix == "not":
+                continue
+            if fix in ("unsure", "small"):
+                per_plate[name][fix].append(c)
+                continue
             bucket = "colonies" if c["mm"] >= min_mm else "small" if c["mm"] >= review_mm else None
             if bucket:
                 per_plate[name][bucket].append(c)
@@ -161,6 +189,8 @@ def apply(args) -> int:
             "small_specks": [[round(c["x"], 1), round(c["y"], 1), round(c["r"], 1)] for c in v["small"]],
             "unsure": [[round(c["x"], 1), round(c["y"], 1), round(c["r"], 1)] for c in v["unsure"]],
             "original_count": data["plates"][name]["original_count"],
+            "px_per_mm": round(data["plates"][name]["px_per_mm"], 3),
+            "plate_flag": next((v for k, v in plate_flag.items() if name.startswith(k)), None),
             "rule": {"min_colony_mm": min_mm, "review_colony_mm": review_mm},
         }, indent=1))
         total += 1

@@ -182,11 +182,17 @@ class Settings:
         raw = (self.engines or "auto").lower().replace(" ", "")
         if raw != "auto":
             return [name for name in raw.split(",") if name]
-        names = ["classical"]
+        names = []
         if self.yolo_weights:
             names.append("yolo")
         if self.rfdetr_weights:
             names.append("rfdetr")
         if self.cellpose_weights:
             names.append("cellpose")
+        # A trained detector runs alone unless fusion weights were fitted on
+        # gold plates: on MicroID's photos the training-free classical engine
+        # is far less accurate (22.5% exact vs 75%) and an unweighted vote
+        # with it adds false colonies.
+        if not names or self.engine_weights:
+            names.insert(0, "classical")
         return names

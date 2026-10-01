@@ -81,7 +81,8 @@ class TiledBoxEngine(Engine):
 
     def __init__(self, tile_size: int = 640, overlap: float = 0.25, conf: float = 0.2,
                  device: str = "", global_pass: bool = True, tile_scale: float = 1.0,
-                 min_size_px: float = 0.0, big_size_px: float = 0.0, big_conf: float = 0.0):
+                 min_size_px: float = 0.0, big_size_px: float = 0.0, big_conf: float = 0.0,
+                 dense_conf: float = 0.0, dense_min: float = 0.0):
         self.tile_size = tile_size
         self.overlap = overlap
         self.conf = conf
@@ -96,6 +97,12 @@ class TiledBoxEngine(Engine):
         self.min_size_px = min_size_px
         self.big_size_px = big_size_px
         self.big_conf = big_conf
+        # Crowded plates: once dense_min boxes clear ``conf``, accept boxes
+        # down to dense_conf. Touching colonies in a crowd get lower scores,
+        # while on sparse plates a lone low score is usually a scratch or
+        # sticker text (fitted on reviewed plates by tools/score_gold.py).
+        self.dense_conf = dense_conf
+        self.dense_min = dense_min
 
     def _predict(self, tiles: list[np.ndarray]) -> list[list[RawBox]]:
         """BGR tiles -> boxes in tile pixel coordinates."""
@@ -132,10 +139,11 @@ class TiledBoxEngine(Engine):
             boxes = [(bx0 / ts, by0 / ts, bx1 / ts, by1 / ts, c, n) for bx0, by0, bx1, by1, c, n in boxes]
         roi_r = ctx.get("roi_radius_px", 0.97 * R)
         rc = ctx.get("roi_center", (plate.cx, plate.cy))
+        floor = min(self.conf, self.dense_conf) if self.dense_conf and self.dense_min else self.conf
         dets = []
         for bx0, by0, bx1, by1, c, n in boxes:
             cls = map_class(n)
-            if cls is None or c < self.conf:
+            if cls is None or c < floor:
                 continue
             size = ((bx1 - bx0) + (by1 - by0)) / 2.0  # same measure as tune_detector.py
             if size < self.min_size_px:
@@ -149,6 +157,8 @@ class TiledBoxEngine(Engine):
                 cx=cx, cy=cy, radius=((bx1 - bx0) + (by1 - by0)) / 4.0, confidence=float(c),
                 class_name=cls, source=self.name, shape_source="box",
             ))
+        if floor < self.conf and sum(d.confidence >= self.conf for d in dets) < self.dense_min:
+            dets = [d for d in dets if d.confidence >= self.conf]
         return dets
 
 

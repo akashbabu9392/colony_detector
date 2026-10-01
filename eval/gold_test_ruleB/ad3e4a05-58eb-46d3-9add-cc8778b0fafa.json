@@ -1,0 +1,20 @@
+{
+ "image": "ad3e4a05-58eb-46d3-9add-cc8778b0fafa.jpg",
+ "count": 1,
+ "points": [
+  [
+   1699.5,
+   1746.5,
+   1302.0
+  ]
+ ],
+ "small_specks": [],
+ "unsure": [],
+ "original_count": 1,
+ "px_per_mm": 33.575,
+ "plate_flag": "tntc",
+ "rule": {
+  "min_colony_mm": 0.5,
+  "review_colony_mm": 0.3
+ }
+}

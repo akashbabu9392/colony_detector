@@ -1,0 +1,25 @@
+{
+ "image": "8f5016ca-e9cc-48c2-a142-db1952e7de2f.jpg",
+ "count": 0,
+ "points": [],
+ "small_specks": [
+  [
+   2200.2,
+   1367.5,
+   5.0
+  ],
+  [
+   1229.3,
+   2070.3,
+   3.9
+  ]
+ ],
+ "unsure": [],
+ "original_count": 2,
+ "px_per_mm": 22.832,
+ "plate_flag": null,
+ "rule": {
+  "min_colony_mm": 0.5,
+  "review_colony_mm": 0.3
+ }
+}

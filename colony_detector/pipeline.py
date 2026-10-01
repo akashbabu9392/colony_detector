@@ -198,6 +198,11 @@ class ColonyCounter:
 
         weights = {e.name: e.weight for e in self.engines}
         dets = fuse(results, weights, s.fuse_threshold)
+        if "foreground_coverage" not in ctx:
+            # No classical engine: estimate the covered share of the agar from
+            # the detections, so spreading growth / lawns still go to review.
+            roi = ctx.get("roi_radius_px", 0.97 * plate.radius)
+            ctx["foreground_coverage"] = min(1.0, sum(d.radius ** 2 for d in dets) / max(roi, 1.0) ** 2)
 
         # Counting rule by physical size, measured with the dish as ruler.
         px_per_mm = 2.0 * plate.radius / s.dish_mm

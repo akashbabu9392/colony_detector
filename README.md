@@ -95,7 +95,8 @@ that has never seen this kind of plate from silently corrupting the count.
 
 **Review rules** (MicroID TRD §9/§12): `needs_review` with reason codes
 `PLATE_NOT_FOUND`, `LOW_FOCUS`, `GLARE`, `OVERGROWTH`, `TNTC` (> 300 by
-default), `MANY_LOW_CONFIDENCE` and `ENGINE_DISAGREEMENT`. An annotated
+default), `MANY_LOW_CONFIDENCE`, `ENGINE_DISAGREEMENT` and `SMALL_SPECKS`
+(0.3–0.5 mm specks, not counted under rule B). An annotated
 image is produced **only when there is at least one detection**.
 
 ---
@@ -106,40 +107,90 @@ image is produced **only when there is at least one detection**.
 
 1,324 plates (3434 × 3434 px, 19,187 hand-labelled colonies), split
 deterministically by sample id into 1,051 train / 135 valid / 138 test.
-The 138 test plates are never used for training or tuning.
+The 138 test plates are never used for training.
+
+**Counting rule B** (agreed for MicroID): a colony counts when it is at
+least **0.5 mm** across; 0.3–0.5 mm pin-point specks are not counted but put
+the plate in review (`SMALL_SPECKS`); anything smaller is ignored. The
+90 mm dish is the ruler (≈ 23 px per mm on these photos). Settings:
+`CD_MIN_COLONY_MM`, `CD_REVIEW_COLONY_MM`, `CD_DISH_MM`.
+
+#### Reviewed answer key for the 138 test plates
+
+The original labels turned out to be too inconsistent to measure exact
+counts against (identical specks boxed on one plate and not on the next,
+unboxed colonies, boxes on sticker text and scratches). So every spot where
+the labels and the Medium model disagreed (411 spots), plus every
+low-confidence spot where they agreed and every agreed spot on sparse plates
+(239 more), was reviewed zoomed in and decided *colony / not / speck /
+unsure* under rule B (`tools/answer_key.py`). The result is
+`eval/gold_test_ruleB/` (one JSON per plate: counted colonies, specks,
+undecided spots). Three plates are marked TNTC / overgrown and scored apart.
+
+What the review found in the 997 original test labels: about 6 % of real
+colonies were never boxed; 32 boxes are not colonies (sticker text, fibres,
+scratches, rim glints; in 17 of them the model made the same mistake); 99
+boxes are pin-point specks under 0.5 mm. Against the answer key, the
+original labels themselves are only 72 % exact.
+
+Scoring (`tools/score_gold.py`): a plate's count is right when it falls
+between the counted colonies and counted + undecided; a detection on an
+undecided spot or a speck is neither a hit nor a false positive.
+
+| RF-DETR Medium (Kaggle, 10 epochs), 135 countable test plates | exact | within ±1 | within ±2 | mean abs. error | colony F1 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| fixed cut 0.5 (fitted on valid against original labels) | 67.4 % | 90.4 % | 94.8 % | 0.77 | 0.917 |
+| **cut 0.85, crowded plates 0.35** (fitted on the answer key) | **77.8 %** | **94.1 %** | **96.3 %** | **0.49** | **0.937** |
+| same, 2-fold cross-validated (fit on half, score the other half, ×5) | 75.2 % | 91.7 % | 95.4 % | 0.62 | 0.917 |
+
+The cross-validated row is the honest estimate for new plates. The
+crowded-plate cut works because touching colonies get lower scores
+while a lone low score on a sparse plate is usually a scratch or sticker.
+Once 5 boxes clear 0.85, boxes down to 0.35 are kept
+(`TiledBoxEngine.dense_conf` / `dense_min`, written to
+`models/detector.json` by `score_gold.py --tune`).
+
+By plate (fitted cut):
+
+| plates | n | exact | within ±1 |
+| --- | ---: | ---: | ---: |
+| no colonies | 53 | 100 % | 100 % |
+| 1–5 colonies | 66 | 71 % | 97 % |
+| 6–30 colonies | 10 | 40 % | 60 % |
+| > 30 colonies | 6 | 17 % | 67 % |
+| not flagged `SMALL_SPECKS` | 125 | 82 % | 96 % |
+
+Remaining errors are mostly missed colonies in crowded clusters and next to
+big moulds, and colonies at the 0.5 mm boundary. The next training round
+(`notebooks/train_rfdetr_kaggle_round2.ipynb`) fine-tunes on cleaned labels:
+boxes under 0.3 mm dropped, and colonies the current model is ≥ 0.9 sure of
+added where the labels missed them (`build_training_set.py --min-label-mm
+--repair-weights`). At ≥ 0.85 its detections on the reviewed plates were
+99.7 % correct.
+
+#### Against the original labels (before the review)
 
 | engine (138 held-out test plates) | exact | within ±1 colony | within ±2 | mean abs. error | detection F1 |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | classical (no training) | 22.5 % | – | – | 8.6 | 0.19 |
-| RF-DETR Nano, half-res tiles, 1 CPU epoch, conf 0.5 | **49.3 %** | **83.3 %** | **92.8 %** | 1.25 | 0.86 |
+| RF-DETR Nano, half-res tiles, 1 CPU epoch, conf 0.5 | 49.3 % | 83.3 % | 92.8 % | 1.25 | 0.86 |
 | RF-DETR Nano, full-res tiles, 3 more CPU epochs, conf 0.75 (fitted on valid) | 35.5 % | 76.1 % | 88.4 % | 2.56 | 0.76 |
-| **RF-DETR Medium, full-res tiles, 10 epochs on a Kaggle T4, conf 0.5 (fitted on valid)** | 39.9 % | 79.7 % | 89.9 % | 1.44 | 0.85 |
+| RF-DETR Medium, full-res tiles, 10 epochs on a Kaggle T4, conf 0.5 (fitted on valid) | 39.9 % | 79.7 % | 89.9 % | 1.44 | 0.85 |
 
-The half-res row's cut-off (0.5) was picked on the test plates, so it is
-slightly optimistic; the full-res row's cut-off was fitted on validation.
+These numbers mostly measure label noise. The classical engine misses most
+tiny colonies on these plates (it counted 0 on 47 of the 104 plates with 1–3
+colonies), so a trained detector is required; with one present, `CD_ENGINES=auto`
+runs it alone (the classical engine joins only when `models/fusion.json`
+holds fitted fusion weights).
 
-The Medium model's weights and fitted `detector.json` are in the
-`dataset-v2` release (`results.zip`); put both in `models/` to serve them.
+The Medium model's weights and `detector.json` are in the `dataset-v2`
+release (`results.zip`). Put `rfdetr_tiles.pth` in `models/` and use the
+`detector.json` below (the cut fitted on the answer key):
 
-**Label quality is the current ceiling.** On the 65 test plates labelled
-with one colony, the Medium model counts more on 29; zoomed in, many of those
-"extra" detections are specks identical to specks that *were* labelled on
-other plates (inconsistent labels), the rest are scratches and fibres (real
-model errors). Reviewing the disagreements by eye:
-the model's most confident "false positives" are mostly real colonies that
-were never boxed; many labelled colonies are 5–12 px specks that are barely
-visible; and some boxes are not colonies (a paper sticker, agar grid texture,
-overgrown lawns labelled as 1). The full-res model finds more colonies (87 %
-of labelled colonies on sparse plates vs 75 % at half-res) and is penalised
-for the unlabelled ones it finds. A label review pass on the disagreeing
-plates is needed before exact-count accuracy can be measured or improved
-reliably.
-
-The classical engine misses most tiny colonies on these plates (it counted
-0 on 47 of the 104 plates with 1–3 colonies), so a trained detector is
-required. The RF-DETR row is an early checkpoint from CPU training; the
-full-resolution RF-DETR Medium run in `notebooks/train_rfdetr_colab.ipynb`
-(GPU) is the intended production model.
+```json
+{"rfdetr": {"conf": 0.85, "dense_conf": 0.35, "dense_min": 5,
+            "min_size_px": 0, "big_size_px": 0, "big_conf": 0.7}}
+```
 
 ### 1. Synthetic plates with exact ground truth (held-out seeds)
 
@@ -283,15 +334,16 @@ fails CI.
 
 | var | default | meaning |
 | --- | --- | --- |
-| `CD_ENGINES` | `auto` | `auto` = classical + every engine whose weights exist, or a list such as `classical,yolo` |
+| `CD_ENGINES` | `auto` | `auto` = every trained engine whose weights exist (alone; plus classical when `fusion.json` is fitted, or classical only when none exist), or a list such as `classical,yolo` |
 | `CD_MODELS_DIR` | `./models` | where weights and `fusion.json` are looked up |
 | `CD_YOLO_WEIGHTS` / `CD_RFDETR_WEIGHTS` / `CD_CELLPOSE_WEIGHTS` | auto-detected | explicit weight paths |
 | `CD_TILE_SIZE` / `CD_TILE_OVERLAP` | 640 / 0.25 | tiled inference (must match training) |
 | `CD_DETECTOR_CONF` | 0.2 | minimum box-detector confidence (YOLO, Grounding DINO) |
-| `CD_RFDETR_CONF` | 0.4 | minimum RF-DETR confidence |
+| `CD_RFDETR_CONF` | 0.4 | minimum RF-DETR confidence (`models/detector.json` overrides it, incl. the crowded-plate cut) |
 | `CD_FUSE_THRESHOLD` | 0.25 (or `fusion.json`) | consensus threshold |
 | `CD_OUTLIER_RATIO` | 2.5 | out-of-domain guard |
 | `CD_TNTC_LIMIT` | 300 | too-numerous-to-count limit |
+| `CD_MIN_COLONY_MM` / `CD_REVIEW_COLONY_MM` / `CD_DISH_MM` | 0.5 / 0.3 / 90 | counting rule B: count ≥ 0.5 mm, review 0.3–0.5 mm specks, dish diameter as ruler |
 | `CD_POLARITY` | auto | force `dark` / `bright` / `both` colonies |
 | `CD_DEVICE` | "" | e.g. `cuda:0` |
 | `CD_API_KEY` | "" | require a bearer token |

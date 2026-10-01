@@ -8,6 +8,8 @@ RF-DETR uses a DINOv2 backbone; it is the recommended learned engine.
 downscaled. Needs a GPU in practice (a Colab T4 is fine for small/medium).
 The best checkpoint is copied to ``models/rfdetr_tiles.pth``. An interrupted
 run continues with ``--resume <output>/last.ckpt`` (same arguments).
+``--init <previous rfdetr_tiles.pth>`` fine-tunes the previous round's model
+(e.g. on cleaned labels) instead of starting from the COCO weights.
 """
 
 from __future__ import annotations
@@ -32,13 +34,15 @@ def main() -> int:
     ap.add_argument("--output", default="runs/rfdetr")
     ap.add_argument("--out", default=str(REPO / "models" / "rfdetr_tiles.pth"))
     ap.add_argument("--resume", help="continue an interrupted run from its last.ckpt")
+    ap.add_argument("--init", help="start from these weights (e.g. the previous round's rfdetr_tiles.pth)")
     args = ap.parse_args()
 
     import rfdetr
 
     cls = {"nano": "RFDETRNano", "small": "RFDETRSmall", "medium": "RFDETRMedium",
            "base": "RFDETRBase", "large": "RFDETRLarge"}[args.size]
-    model = getattr(rfdetr, cls)(resolution=args.resolution)
+    init = {"pretrain_weights": args.init} if args.init else {}
+    model = getattr(rfdetr, cls)(resolution=args.resolution, **init)
     kw = {"device": args.device} if args.device else {}
     if args.resume:
         kw["resume"] = args.resume
