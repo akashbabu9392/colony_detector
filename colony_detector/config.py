@@ -129,6 +129,13 @@ class Settings:
 
     # Plates above this are reported as TNTC (too numerous to count).
     tntc_limit: int = field(default_factory=lambda: _env_int("CD_TNTC_LIMIT", 300))
+    # Counting rule (lab SOP): colonies of at least min_colony_mm are counted;
+    # specks between review_colony_mm and min_colony_mm are not counted but
+    # send the plate to review; anything smaller is ignored as dust/noise.
+    # Sizes are converted with the dish itself as the ruler (dish_mm across).
+    min_colony_mm: float = field(default_factory=lambda: _env_float("CD_MIN_COLONY_MM", 0.5))
+    review_colony_mm: float = field(default_factory=lambda: _env_float("CD_REVIEW_COLONY_MM", 0.3))
+    dish_mm: float = field(default_factory=lambda: _env_float("CD_DISH_MM", 90.0))
     # Quality gates for needs_review.
     min_focus_score: float = field(default_factory=lambda: _env_float("CD_MIN_FOCUS", 0.25))
     max_glare_score: float = field(default_factory=lambda: _env_float("CD_MAX_GLARE", 0.05))

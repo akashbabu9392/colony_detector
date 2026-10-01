@@ -108,3 +108,29 @@ def test_high_density_flags_tntc():
     assert res.tntc
     assert "TNTC" in res.confidence["reason_codes"]
     assert res.confidence["needs_review"]
+
+
+def test_counting_rule_by_physical_size():
+    """Rule B: >= 0.5 mm counted, 0.3-0.5 mm flagged for review, smaller ignored.
+    The dish (90 mm) is the ruler."""
+    import cv2
+
+    from colony_detector.config import Settings
+    from colony_detector.pipeline import ColonyCounter
+
+    S = 1000
+    img = np.full((S, S, 3), 235, np.uint8)
+    cv2.circle(img, (500, 500), 470, (150, 205, 225), -1, cv2.LINE_AA)  # 940 px dish = 90 mm
+    px_mm = 940 / 90.0
+    for x, y in [(300, 300), (700, 300), (500, 700)]:
+        cv2.circle(img, (x, y), int(1.5 * px_mm), (60, 90, 120), -1, cv2.LINE_AA)  # 3 mm colonies
+    s = Settings(engines="classical")
+    s.min_colony_mm, s.review_colony_mm = 0.5, 0.3
+    res = ColonyCounter(s).count(img)
+    assert res.total == 3
+    assert res.diagnostics["counting_rule"]["small_specks"] == 0
+    # Raise the counting size above 3 mm: the colonies become review-only specks.
+    s.min_colony_mm, s.review_colony_mm = 5.0, 1.0
+    res = ColonyCounter(s).count(img)
+    assert res.total == 0
+    assert "SMALL_SPECKS" in res.confidence["reason_codes"]

@@ -198,6 +198,19 @@ class ColonyCounter:
 
         weights = {e.name: e.weight for e in self.engines}
         dets = fuse(results, weights, s.fuse_threshold)
+
+        # Counting rule by physical size, measured with the dish as ruler.
+        px_per_mm = 2.0 * plate.radius / s.dish_mm
+        small_specks = 0
+        if s.min_colony_mm > 0:
+            kept = []
+            for d in dets:
+                size_mm = 2.0 * d.radius / px_per_mm
+                if size_mm >= s.min_colony_mm:
+                    kept.append(d)
+                elif size_mm >= s.review_colony_mm:
+                    small_specks += 1
+            dets = kept
         # Reading order (row bands, then left to right) so colony #N in the
         # overlay is easy to find by eye.
         band = 4.0 * float(np.median([d.radius for d in dets])) if dets else 1.0
@@ -213,6 +226,12 @@ class ColonyCounter:
         if disagreement:
             confidence["needs_review"] = True
             confidence["reason_codes"].append("ENGINE_DISAGREEMENT")
+        if small_specks:
+            # Pin-point specks below the counting size: a person decides.
+            confidence["needs_review"] = True
+            confidence["reason_codes"].append("SMALL_SPECKS")
+        ctx["counting_rule"] = {"min_colony_mm": s.min_colony_mm, "review_colony_mm": s.review_colony_mm,
+                                "px_per_mm": round(px_per_mm, 2), "small_specks": small_specks}
         quality = {**quality, "plate_found": plate.found, "overgrowth_detected": coverage > 0.35,
                    "foreground_coverage": round(coverage, 4)}
 
