@@ -11,5 +11,6 @@ eval/results*.csv
 # Model weights are large: keep them out of git (see models/README.md).
 models/*
 !models/README.md
+!models/detector.json
 data/
 *.zip

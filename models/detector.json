@@ -1,0 +1,10 @@
+{
+  "rfdetr": {
+    "conf": 0.85,
+    "dense_conf": 0.35,
+    "dense_min": 5,
+    "min_size_px": 0,
+    "big_size_px": 0,
+    "big_conf": 0.7
+  }
+}
