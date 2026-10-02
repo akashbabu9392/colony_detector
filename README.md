@@ -183,19 +183,30 @@ colonies), so a trained detector is required; with one present, `CD_ENGINES=auto
 runs it alone (the classical engine joins only when `models/fusion.json`
 holds fitted fusion weights).
 
-The Medium model's weights are in the `dataset-v2` release (`results.zip`).
-Put `rfdetr_tiles.pth` in `models/` and use the `detector.json` below (the cut
-fitted on the answer key):
+**Which weights go with which cut.** The cut-offs are fitted per model, so
+`models/detector.json` must match the `rfdetr_tiles.pth` next to it:
+
+| model | where | `conf` / `dense_conf` / `dense_min` | exact | ±1 | ±2 | MAE | cross-validated exact / ±1 / MAE |
+| --- | --- | --- | ---: | ---: | ---: | ---: | --- |
+| round 1 (original labels, 10 epochs) | releases `model-v1` (`rfdetr_tiles.pth`), `dataset-v2` (`results.zip`) | 0.85 / 0.35 / 5 | 77.8 % | 94.1 % | 96.3 % | 0.49 | 75.2 % / 91.7 % / 0.62 |
+| **round 2** (cleaned labels, +6 epochs) | the round-2 Kaggle notebook's Output; upload it as release `model-v2` | **0.75 / 0.35 / 15** (the committed `models/detector.json`) | 79.3 % | 94.8 % | 97.8 % | 0.41 | 75.9 % / 92.4 % / 0.49 |
+
+Round 1 weights with the round-2 cut drop to 74.1 % exact, so don't mix
+them. For round 1 use:
 
 ```json
-{"rfdetr": {"conf": 0.75, "dense_conf": 0.35, "dense_min": 15,
+{"rfdetr": {"conf": 0.85, "dense_conf": 0.35, "dense_min": 5,
             "min_size_px": 0, "big_size_px": 0, "big_conf": 0.7}}
 ```
 
-That is the round-2 cut (`eval/results_round2/`, fitted 2026-10-01 on the
-cleaned-label fine-tune): exact 79.3 %, within ±1 94.8 %, within ±2 97.8 %,
-MAE 0.41, colony F1 0.935 on the 135 countable answer-key plates; 75.9 % /
-92.4 % / 95.6 %, MAE 0.49, F1 0.915 with 2-fold cross-validation.
+Round 2 is better mainly on plates with 1–5 colonies (80 % vs 71 % exact)
+but worse on empty plates (91 % vs 100 %: sticker text and scratches again).
+Cross-validated, the gain is about one plate in 135, within noise. Label
+cleaning changed little (375 boxes < 0.3 mm dropped, only 28 colonies added),
+so the model barely moved. Averaging both models does not help either
+(75.3 % cross-validated). Crowded plates (> 5 colonies, 16 of 135) remain
+the weak spot and need more carefully labelled crowded plates, not more
+epochs.
 
 ### 1. Synthetic plates with exact ground truth (held-out seeds)
 

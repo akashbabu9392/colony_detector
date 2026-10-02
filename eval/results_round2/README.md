@@ -1,7 +1,7 @@
 # Round-2 results (RF-DETR Medium, Kaggle T4, 2026-10-01)
 
 Outputs of `notebooks/train_rfdetr_kaggle_round2.ipynb`, extracted from the
-notebook's `results.zip` (also on the `dataset-v2` release). Round 2
+notebook's `results.zip`. Round 2
 fine-tunes the round-1 Medium model for 6 epochs on **cleaned labels** (boxes
 under 0.3 mm dropped, colonies the model was >= 0.9 sure of added where the
 labels missed them), then refits the cut-offs on the reviewed answer key.
@@ -19,10 +19,12 @@ The fitted cut for these weights is `models/detector.json` (`conf` 0.75,
 within +/-2 97.8 %, MAE 0.41, colony F1 0.935 — 75.9 / 92.4 / 95.6 %, MAE
 0.49, F1 0.915 cross-validated.
 
-The fine-tuned checkpoint (`rfdetr_tiles.pth`, 128 MB) is **not in git**:
-GitHub rejects blobs over 100 MB and `models/README.md` keeps weights out of
-the tree. Download it from the `dataset-v2` release (`results.zip`) or the
-Kaggle notebook output and drop it in `models/`.
+The fine-tuned checkpoint (`rfdetr_tiles.pth`, 128 MB) is **not in git**
+(GitHub rejects blobs over 100 MB) and **not on a release yet**: the
+`dataset-v2` and `model-v1` releases hold the round-1 model. Take it from the
+round-2 Kaggle notebook's Output and upload it as release `model-v2`. The
+committed `models/detector.json` is fitted for these round-2 weights only
+(round-1 weights with it: 74.1 % exact instead of 77.8 % with their own cut).
 
 Re-score these plates offline from the committed cache (no weights, no
 images, no GPU needed):
