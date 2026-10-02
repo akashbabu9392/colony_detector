@@ -26,3 +26,11 @@ picks a batch and clicks **Save decisions file** when done. Merge all
 returned files (and, if used, the online page's documents) in one go:
 
     python tools/answer_key.py from-web --out review/crowded --docs crowded-review_batch*.json
+
+## Hosted review page (GitHub Pages)
+
+The full kit (all batches, batch picker) is on the `gh-pages` branch and
+served at https://akashbabu9392.github.io/colony_detector/ once Settings →
+Pages → Source is "Deploy from a branch", branch `gh-pages`, folder `/ (root)`.
+Rebuild it with `answer_key.py kit` (without --per-batch) and replace the
+branch contents. Decisions still come back as saved files.
