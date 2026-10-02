@@ -189,10 +189,15 @@ holds fitted fusion weights).
 | model | where | `conf` / `dense_conf` / `dense_min` | exact | ±1 | ±2 | MAE | cross-validated exact / ±1 / MAE |
 | --- | --- | --- | ---: | ---: | ---: | ---: | --- |
 | round 1 (original labels, 10 epochs) | releases `model-v1` (`rfdetr_tiles.pth`), `dataset-v2` (`results.zip`) | 0.85 / 0.35 / 5 | 77.8 % | 94.1 % | 96.3 % | 0.49 | 75.2 % / 91.7 % / 0.62 |
-| **round 2** (cleaned labels, +6 epochs) | the round-2 Kaggle notebook's Output; upload it as release `model-v2` | **0.75 / 0.35 / 15** (the committed `models/detector.json`) | 79.3 % | 94.8 % | 97.8 % | 0.41 | 75.9 % / 92.4 % / 0.49 |
+| **round 2** (cleaned labels, +6 epochs) | release `model-v2` (`rfdetr_tiles.pth`) | **0.75 / 0.35 / 15** (the committed `models/detector.json`) | 79.3 % | 94.8 % | 97.8 % | 0.41 | 75.9 % / 92.4 % / 0.49 |
 
 Round 1 weights with the round-2 cut drop to 74.1 % exact, so don't mix
-them. For round 1 use:
+them. Download them with their sha256 so the pair cannot be confused:
+
+    rfdetr_tiles.pth  model-v1 / dataset-v2  sha256 bddbe41e69cc4ac84c1ded2ed3f6f98b98efbc548720a5cb303435dfab5cde96
+    rfdetr_tiles.pth  model-v2               sha256 615efc006a7252a73dd7f901d2f592b9280377260cb888aada4fa74545336b62
+
+For round 1 use:
 
 ```json
 {"rfdetr": {"conf": 0.85, "dense_conf": 0.35, "dense_min": 5,

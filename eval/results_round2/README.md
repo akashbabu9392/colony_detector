@@ -20,11 +20,11 @@ within +/-2 97.8 %, MAE 0.41, colony F1 0.935 — 75.9 / 92.4 / 95.6 %, MAE
 0.49, F1 0.915 cross-validated.
 
 The fine-tuned checkpoint (`rfdetr_tiles.pth`, 128 MB) is **not in git**
-(GitHub rejects blobs over 100 MB) and **not on a release yet**: the
-`dataset-v2` and `model-v1` releases hold the round-1 model. Take it from the
-round-2 Kaggle notebook's Output and upload it as release `model-v2`. The
-committed `models/detector.json` is fitted for these round-2 weights only
-(round-1 weights with it: 74.1 % exact instead of 77.8 % with their own cut).
+(GitHub rejects blobs over 100 MB); it is published as release `model-v2`
+(`rfdetr_tiles.pth`, sha256 `615efc00…`). The `dataset-v2` and `model-v1`
+releases hold the round-1 model instead (round-1 weights with the committed
+cut: 74.1 % exact instead of 77.8 % with their own cut). The committed
+`models/detector.json` is fitted for these round-2 weights only.
 
 Re-score these plates offline from the committed cache (no weights, no
 images, no GPU needed):
