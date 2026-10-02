@@ -1,8 +1,8 @@
 {
   "rfdetr": {
-    "conf": 0.85,
+    "conf": 0.75,
     "dense_conf": 0.35,
-    "dense_min": 5,
+    "dense_min": 15,
     "min_size_px": 0,
     "big_size_px": 0,
     "big_conf": 0.7

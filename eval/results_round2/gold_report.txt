@@ -1,0 +1,28 @@
+{
+ "params": {
+  "conf": 0.75,
+  "dense_conf": 0.35,
+  "dense_min": 15
+ },
+ "fitted": {
+  "plates": 135,
+  "exact": 0.793,
+  "within_1": 0.948,
+  "within_2": 0.978,
+  "mae": 0.407,
+  "bias": -0.23,
+  "precision": 0.9584,
+  "recall": 0.913,
+  "f1": 0.9352,
+  "tp": 714,
+  "fp": 31,
+  "fn": 68
+ },
+ "cross_validated": {
+  "exact": 0.759,
+  "within_1": 0.924,
+  "within_2": 0.956,
+  "mae": 0.488,
+  "f1": 0.915
+ }
+}

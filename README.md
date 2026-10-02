@@ -183,14 +183,19 @@ colonies), so a trained detector is required; with one present, `CD_ENGINES=auto
 runs it alone (the classical engine joins only when `models/fusion.json`
 holds fitted fusion weights).
 
-The Medium model's weights and `detector.json` are in the `dataset-v2`
-release (`results.zip`). Put `rfdetr_tiles.pth` in `models/` and use the
-`detector.json` below (the cut fitted on the answer key):
+The Medium model's weights are in the `dataset-v2` release (`results.zip`).
+Put `rfdetr_tiles.pth` in `models/` and use the `detector.json` below (the cut
+fitted on the answer key):
 
 ```json
-{"rfdetr": {"conf": 0.85, "dense_conf": 0.35, "dense_min": 5,
+{"rfdetr": {"conf": 0.75, "dense_conf": 0.35, "dense_min": 15,
             "min_size_px": 0, "big_size_px": 0, "big_conf": 0.7}}
 ```
+
+That is the round-2 cut (`eval/results_round2/`, fitted 2026-10-01 on the
+cleaned-label fine-tune): exact 79.3 %, within ±1 94.8 %, within ±2 97.8 %,
+MAE 0.41, colony F1 0.935 on the 135 countable answer-key plates; 75.9 % /
+92.4 % / 95.6 %, MAE 0.49, F1 0.915 with 2-fold cross-validation.
 
 ### 1. Synthetic plates with exact ground truth (held-out seeds)
 

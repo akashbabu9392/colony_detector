@@ -1,0 +1,2 @@
+label cleaning: dropped 375 boxes < 0.3 mm, added 28 confident detections
+tiles: {'train': 8046, 'valid': 1192}, boxes: {'train': 25125, 'valid': 6259}, written to /kaggle/temp/tiles
