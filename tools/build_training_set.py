@@ -21,6 +21,9 @@ Cleaning ``--dataset`` labels (the dish, 90 mm, is the ruler):
 * ``--min-label-mm 0.3`` drops boxes below the counting rule's review size
   (rule B ignores them, so the detector should not be taught to fire on
   them);
+* ``--reviewed eval/reviewed_train`` replaces the labels of every plate that
+  has a reviewed answer-key file there (tools/answer_key.py apply): counted
+  colonies and 0.3-0.5 mm specks become boxes, undecided spots are left out;
 * ``--repair-weights models/rfdetr_tiles.pth`` runs the current detector on
   every train/valid plate and adds the colonies it is very sure of
   (``--repair-conf``, default 0.9) that the labels missed. On reviewed test
@@ -124,14 +127,23 @@ def collect(args):
         if args.min_label_mm > 0 or args.repair_weights:
             clean = LabelCleaner(args.min_label_mm, args.dish_mm, args.repair_weights, args.repair_conf,
                                  args.repair_min_mm)
+        n_reviewed = 0
         for smp in load_dataset(args.dataset):
             if smp.boxes is None:
                 continue  # count-only images cannot train a detector
             if smp.split == "test":
                 continue  # keep the provided test split held out for evaluate.py
             img = read_image(smp.image)
-            boxes = clean(img, smp.boxes) if clean else smp.boxes
+            fixed = Path(args.reviewed) / f"{smp.image.stem}.json" if args.reviewed else None
+            if fixed is not None and fixed.exists():
+                g = json.loads(fixed.read_text())
+                boxes = boxes_from_points(g["points"] + g.get("small_specks", []))
+                n_reviewed += 1
+            else:
+                boxes = clean(img, smp.boxes) if clean else smp.boxes
             yield smp.image.stem, img, boxes, smp.split
+        if args.reviewed:
+            print(f"reviewed labels used for {n_reviewed} plates")
         if clean:
             print(f"label cleaning: dropped {clean.dropped} boxes < {args.min_label_mm} mm, "
                   f"added {clean.added} confident detections")
@@ -246,6 +258,7 @@ def main() -> int:
                     help="resize plates before tiling (serve with the same CD_TILE_SCALE)")
     ap.add_argument("--max-box-frac", type=float, default=0.8,
                     help="colonies bigger than this share of a tile are learnt from the whole-plate view")
+    ap.add_argument("--reviewed", help="folder of reviewed answer-key files that replace dataset labels")
     ap.add_argument("--min-label-mm", type=float, default=0.0, help="drop dataset boxes smaller than this")
     ap.add_argument("--dish-mm", type=float, default=90.0)
     ap.add_argument("--repair-weights", help="RF-DETR checkpoint used to add confident missed colonies")

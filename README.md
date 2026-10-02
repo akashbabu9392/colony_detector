@@ -290,6 +290,26 @@ python tools/tune_fusion.py --dataset data/colony_dataset --split valid
 python tools/evaluate.py --dataset data/colony_dataset --split test --per-engine
 ```
 
+### Reviewing training labels (crowded plates)
+
+Crowded plates are where the detector still misses colonies, and where the
+original labels are least consistent. `tools/answer_key.py` turns every spot
+where the labels and the current model disagree into a click-through review
+page (`tools/review_page/index.html`): the plate photo with numbered rings, a
+crop per spot, and Colony / Not / Speck / Unsure buttons (keys C N S U).
+Decisions are shared between reviewers. The reviewed plates then replace
+their original labels in the next training run.
+
+```bash
+# detections of the current model on the plates to review -> dets.pkl {image: {"dets": [(x, y, r, conf)]}}
+python tools/answer_key.py prepare --dataset data/raw --split train,valid --cache dets.pkl --out review/crowded
+python tools/answer_key.py web --out review/crowded          # photos, crop sheets, review.json, index.html
+#   ...publish review/crowded as a page, review, export the plates documents to plates.json...
+python tools/answer_key.py from-web --out review/crowded --docs plates.json
+python tools/answer_key.py apply --out review/crowded --gold eval/reviewed_train
+python tools/build_training_set.py --dataset data/raw --reviewed eval/reviewed_train --min-label-mm 0.3 --coco ...
+```
+
 ## Getting to production accuracy on your own plates (no dataset yet)
 
 1. **Hand-count 50–100 plates** covering your media, lighting and densities.

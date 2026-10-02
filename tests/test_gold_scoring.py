@@ -53,3 +53,20 @@ def test_unsure_spots_and_specks_are_not_penalised():
     # A speck below 0.5 mm (radius 4 px = 0.4 mm) is flagged, not counted.
     row = score_plate(gold, np.array([[100, 100, 20], [700, 700, 4]], float), 0.5, 0.3)
     assert row["pred"] == 1 and row["pred_specks"] == 1 and row["error"] == -1 and row["fn"] == 1
+
+
+def test_review_page_decisions_round_trip(tmp_path):
+    import json
+    from types import SimpleNamespace
+
+    from answer_key import _plate_order, from_web
+
+    review = [{"id": 0, "plate": "b.jpg"}, {"id": 1, "plate": "b.jpg"}, {"id": 2, "plate": "a.jpg"}]
+    (tmp_path / "candidates.json").write_text(json.dumps({"plates": {}, "review": review}))
+    assert _plate_order({"review": review}) == ["b.jpg", "a.jpg"]
+    docs = [{"k": 0, "calls": {"0": "colony", "1": "not"}, "flag": "countable"},
+            {"k": 1, "calls": {"2": "unsure"}, "flag": "tntc"}]
+    (tmp_path / "plates.json").write_text(json.dumps(docs))
+    from_web(SimpleNamespace(out=str(tmp_path), docs=str(tmp_path / "plates.json")))
+    got = json.loads((tmp_path / "decisions.json").read_text())
+    assert got == {"0": "colony", "1": "not", "2": "unsure", "plate:a.jpg": "tntc"}

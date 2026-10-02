@@ -61,7 +61,8 @@ def _match(labels: np.ndarray, dets: np.ndarray) -> list[tuple[int, int]]:
 
 def prepare(args) -> int:
     cache = pickle.loads(Path(args.cache).read_bytes())
-    samples = [s for s in load_dataset(args.dataset) if s.split == args.split and s.boxes is not None]
+    splits = set(args.split.split(","))
+    samples = [s for s in load_dataset(args.dataset) if s.split in splits and s.boxes is not None]
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     plates, review = {}, []
@@ -98,7 +99,7 @@ def prepare(args) -> int:
             if item["mm"] >= args.review_mm:
                 review.append({**item, "plate": s.image.name, "kind": "model_only"})
         plates[s.image.name] = {"path": str(s.image), "px_per_mm": px_mm, "auto": auto,
-                                "original_count": s.total}
+                                "original_count": s.total, "split": s.split}
     for i, r in enumerate(review):
         r["id"] = i
     (out / "candidates.json").write_text(json.dumps({"plates": plates, "review": review,
@@ -199,12 +200,86 @@ def apply(args) -> int:
     return 0
 
 
+def _plate_order(data: dict) -> list[str]:
+    """Plates in the order their candidates were numbered."""
+    first: dict[str, int] = {}
+    for r in data["review"]:
+        first.setdefault(r["plate"], r["id"])
+    return sorted(first, key=first.get)
+
+
+def web(args) -> int:
+    """Data for tools/review_page/index.html: plate photos with numbered
+    rings, the crop sheets (used as sprites) and review.json."""
+    import shutil
+
+    out = Path(args.out)
+    data = json.loads((out / "candidates.json").read_text())
+    names = _plate_order(data)
+    index = {n: i for i, n in enumerate(names)}
+    (out / "ov").mkdir(exist_ok=True)
+    colour = {"label_only": (255, 143, 30), "model_only": (42, 48, 224), "huge": (214, 58, 214)}
+    plates = []
+    for n in names:
+        p = data["plates"][n]
+        img = read_image(p["path"])
+        for c in p["auto"]:
+            cv2.circle(img, (int(c["x"]), int(c["y"])), int(c["r"] + 8), (76, 177, 34), 7)
+        for r in data["review"]:
+            if r["plate"] != n:
+                continue
+            x, y, rr = int(r["x"]), int(r["y"]), int(r["r"] + 12)
+            cv2.circle(img, (x, y), rr, colour[r["kind"]], 9)
+            for col, th in (((0, 0, 0), 16), ((255, 255, 255), 6)):
+                cv2.putText(img, str(r["id"]), (x + rr + 6, y + 18), 0, 2.6, col, th)
+        h, w = img.shape[:2]
+        s = args.photo_px / max(h, w)
+        img = cv2.resize(img, (int(w * s), int(h * s)), interpolation=cv2.INTER_AREA)
+        rel = f"ov/p{index[n]:04d}.jpg"
+        cv2.imwrite(str(out / rel), img, [cv2.IMWRITE_JPEG_QUALITY, 82])
+        plates.append({"name": n, "split": p.get("split", ""), "orig": p["original_count"], "auto": len(p["auto"]),
+                       "px_mm": p["px_per_mm"], "ov": rel})
+    per, cols = 40, 8
+    sheets, items = {}, []
+    for r in data["review"]:
+        k = r["id"] // per
+        sheet = f"sheet_{k:02d}.jpg"
+        n_on = min(per, len(data["review"]) - k * per)
+        sheets[sheet] = {"cols": cols, "rows": -(-n_on // cols)}
+        j = r["id"] % per
+        items.append({"id": r["id"], "p": index[r["plate"]], "kind": r["kind"], "mm": round(r["mm"], 2),
+                      "conf": round(r["conf"], 2) if "conf" in r else None,
+                      "sheet": sheet, "col": j % cols, "row": j // cols})
+    (out / "review.json").write_text(json.dumps({"rule": {"min_mm": data["min_mm"], "review_mm": data["review_mm"]},
+                                                 "plates": plates, "sheets": sheets, "items": items}))
+    shutil.copy(Path(__file__).resolve().parent / "review_page" / "index.html", out / "index.html")
+    print(f"{len(plates)} plates, {len(items)} spots -> {out}/index.html")
+    return 0
+
+
+def from_web(args) -> int:
+    """Shared decisions of the review page (the `plates` docs, as a JSON list
+    of {k, calls, flag}) -> decisions.json for `apply`."""
+    out = Path(args.out)
+    data = json.loads((out / "candidates.json").read_text())
+    names = _plate_order(data)
+    docs = json.loads(Path(args.docs).read_text())
+    decisions: dict[str, str] = {}
+    for d in docs:
+        decisions.update({str(k): v for k, v in (d.get("calls") or {}).items()})
+        if d.get("flag") in ("tntc", "overgrown"):
+            decisions[f"plate:{names[int(d['k'])]}"] = d["flag"]
+    (out / "decisions.json").write_text(json.dumps(decisions, indent=0, sort_keys=True))
+    print(f"{len(decisions)} decisions -> {out / 'decisions.json'}")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("prepare")
     p.add_argument("--dataset", required=True)
-    p.add_argument("--split", default="test")
+    p.add_argument("--split", default="test", help="comma list, e.g. train,valid")
     p.add_argument("--cache", required=True, help="pickle {image name: {'dets': [(x, y, r, conf), ...]}}")
     p.add_argument("--out", required=True)
     p.add_argument("--min-conf", type=float, default=0.3)
@@ -215,8 +290,14 @@ def main() -> int:
     a = sub.add_parser("apply")
     a.add_argument("--out", required=True)
     a.add_argument("--gold", required=True)
+    w = sub.add_parser("web", help="build the click-through review page")
+    w.add_argument("--out", required=True)
+    w.add_argument("--photo-px", type=int, default=1100)
+    f = sub.add_parser("from-web", help="review page decisions -> decisions.json")
+    f.add_argument("--out", required=True)
+    f.add_argument("--docs", required=True, help="JSON list of the page's plates documents")
     args = ap.parse_args()
-    return prepare(args) if args.cmd == "prepare" else apply(args)
+    return {"prepare": prepare, "apply": apply, "web": web, "from-web": from_web}[args.cmd](args)
 
 
 if __name__ == "__main__":
