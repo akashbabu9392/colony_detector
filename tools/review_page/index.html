@@ -53,6 +53,9 @@ button:focus-visible, select:focus-visible, .tile:focus-visible, summary:focus-v
 .btn { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 6px 12px; }
 .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 .status { font-size: .85rem; color: var(--muted); }
+.who { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-size: .9rem; }
+.who label { display: inline-flex; align-items: center; gap: 6px; }
+.who input, .who select { font: inherit; padding: 5px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); max-width: 72vw; }
 .status.err { color: var(--no); }
 
 details.help { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 14px; margin-top: 14px; }
@@ -112,6 +115,11 @@ kbd { font-family: var(--font-mono); font-size: .8em; border: 1px solid var(--li
         <small id="progress-text" class="mono">Loading candidates…</small>
       </div>
     </div>
+    <div class="bar-row who">
+      <label for="who">Your name <input id="who" autocomplete="name" placeholder="e.g. Priya"></label>
+      <label for="batch">Plates <select id="batch"></select></label>
+      <button class="btn primary" id="save-file" hidden>Save decisions file</button>
+    </div>
     <div class="bar-row">
       <div class="nav">
         <button class="btn" id="prev" aria-label="Previous plate">‹ Prev</button>
@@ -155,11 +163,13 @@ kbd { font-family: var(--font-mono); font-size: .8em; border: 1px solid var(--li
   <main id="plate-view"><div class="empty">Loading plates…</div></main>
 </div>
 
+<!--REVIEW_DATA-->
 <script>
 (() => {
   const DECISIONS = [["colony", "Colony", "c"], ["not", "Not", "n"], ["small", "Speck", "s"], ["unsure", "Unsure", "u"]];
   const KIND_LABEL = { label_only: "label only", model_only: "model only", huge: "very large" };
-  const state = { data: null, plate: 0, calls: {}, flags: {}, who: {}, db: null, user: null, writable: true };
+  const state = { data: null, plate: 0, calls: {}, flags: {}, db: null, user: null, batch: -1, batches: [], list: [] };
+  const OFFLINE = !(window.claude && window.claude.use);
   const $ = (id) => document.getElementById(id);
   const store = {
     get(k) { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch { return null; } },
@@ -172,18 +182,49 @@ kbd { font-family: var(--font-mono); font-size: .8em; border: 1px solid var(--li
   function plateDone(p) { return state.flags[p] && state.flags[p] !== "countable" || decidedIn(p) === itemsOf(p).length; }
 
   function renderProgress() {
-    const total = state.data.items.length;
-    let done = 0;
-    for (const it of state.data.items) if (state.calls[it.id] || (state.flags[it.p] && state.flags[it.p] !== "countable")) done++;
-    const plates = state.data.plates.filter((_, i) => plateDone(i)).length;
+    let total = 0, done = 0;
+    for (const p of state.list) {
+      const items = itemsOf(p), flagged = state.flags[p] && state.flags[p] !== "countable";
+      total += items.length;
+      done += flagged ? items.length : items.filter((it) => state.calls[it.id]).length;
+    }
+    const plates = state.list.filter((p) => plateDone(p)).length;
     $("fill").style.width = (100 * done / Math.max(total, 1)).toFixed(1) + "%";
-    $("progress-text").textContent = `${done.toLocaleString()} of ${total.toLocaleString()} spots decided · ${plates} of ${state.data.plates.length} plates finished`;
+    $("progress-text").textContent = `${done.toLocaleString()} of ${total.toLocaleString()} spots decided · ${plates} of ${state.list.length} plates finished`;
     const sel = $("plate-select");
-    state.data.plates.forEach((pl, i) => {
-      const n = itemsOf(i).length, d = decidedIn(i);
-      const flag = state.flags[i] && state.flags[i] !== "countable" ? ` · ${state.flags[i].toUpperCase()}` : "";
-      sel.options[i].textContent = `${plateDone(i) ? "✓" : "○"} Plate ${i + 1} · ${pl.orig} labelled · ${d}/${n} decided${flag}`;
+    state.list.forEach((p, j) => {
+      const pl = state.data.plates[p], n = itemsOf(p).length, d = decidedIn(p);
+      const flag = state.flags[p] && state.flags[p] !== "countable" ? ` · ${state.flags[p].toUpperCase()}` : "";
+      sel.options[j].textContent = `${plateDone(p) ? "✓" : "○"} Plate ${p + 1} · ${pl.orig} labelled · ${d}/${n} decided${flag}`;
     });
+  }
+
+  function makeBatches() {
+    const n = state.data.batches || 6, sizes = state.data.plates.map((_, p) => itemsOf(p).length);
+    const total = sizes.reduce((a, b) => a + b, 0), out = [];
+    let cur = [], acc = 0;
+    sizes.forEach((sz, p) => {
+      cur.push(p); acc += sz;
+      if (out.length < n - 1 && acc >= total * (out.length + 1) / n) { out.push(cur); cur = []; }
+    });
+    if (cur.length) out.push(cur);
+    return out;
+  }
+
+  function fillPlateSelect() {
+    const sel = $("plate-select");
+    sel.innerHTML = "";
+    state.list.forEach((p) => { const o = document.createElement("option"); o.value = String(p); sel.appendChild(o); });
+  }
+
+  function setBatch(b) {
+    state.batch = b;
+    state.list = b < 0 ? state.data.plates.map((_, p) => p) : state.batches[b];
+    store.set("crowded-review-batch", b);
+    fillPlateSelect();
+    if (!state.list.includes(state.plate)) state.plate = state.list[0];
+    renderPlate();
+    renderProgress();
   }
 
   function cropStyle(it) {
@@ -281,7 +322,11 @@ kbd { font-family: var(--font-mono); font-size: .8em; border: 1px solid var(--li
     if (patch.flag) cur.flag = patch.flag;
     pending.set(p, cur);
     persistLocal();
-    if (!state.db) { setStatus("Saved in this browser only. Use Copy decisions to send them."); return; }
+    if (!state.db) {
+      setStatus(OFFLINE ? "Saved on this computer. When you finish, click Save decisions file and send the file."
+        : "Saved in this browser only. Use Copy decisions to send them.");
+      return;
+    }
     clearTimeout(timers.get(p));
     timers.set(p, setTimeout(() => flush(p), 600));
     setStatus("Saving…");
@@ -335,24 +380,28 @@ kbd { font-family: var(--font-mono); font-size: .8em; border: 1px solid var(--li
     renderProgress();
   }
 
-  function go(i) {
-    const n = state.data.plates.length;
-    state.plate = (i + n) % n;
+  function step(d) {
+    const n = state.list.length, j = state.list.indexOf(state.plate);
+    go(state.list[((j < 0 ? 0 : j) + d + n) % n]);
+  }
+
+  function go(p) {
+    state.plate = p;
     renderPlate();
     window.scrollTo({ top: 0 });
   }
 
   function nextOpen() {
-    const n = state.data.plates.length;
+    const n = state.list.length, j = state.list.indexOf(state.plate);
     for (let k = 1; k <= n; k++) {
-      const i = (state.plate + k) % n;
-      if (!plateDone(i)) return go(i);
+      const p = state.list[(j + k) % n];
+      if (!plateDone(p)) return go(p);
     }
-    setStatus("Every plate is finished.");
+    setStatus(OFFLINE ? "Every plate in your batch is finished. Click Save decisions file and send it." : "Every plate in this batch is finished.");
   }
 
   async function connect() {
-    if (!window.claude || !window.claude.use) { setStatus("Saved in this browser only."); return; }
+    if (OFFLINE) { setStatus("Offline kit: decisions are saved on this computer as you click."); return; }
     const [db, user] = await Promise.all([window.claude.use("db"), window.claude.use("user")]);
     state.user = user;
     if (user) { try { state.userId = await user.id(); } catch { state.userId = null; } }
@@ -377,14 +426,15 @@ kbd { font-family: var(--font-mono); font-size: .8em; border: 1px solid var(--li
 
   document.addEventListener("keydown", (e) => {
     if (e.target.tagName === "SELECT") return;
-    if (e.key === "]") go(state.plate + 1);
-    if (e.key === "[") go(state.plate - 1);
+    if (e.target.tagName === "INPUT") return;
+    if (e.key === "]") step(1);
+    if (e.key === "[") step(-1);
   });
-  $("prev").addEventListener("click", () => go(state.plate - 1));
-  $("next").addEventListener("click", () => go(state.plate + 1));
+  $("prev").addEventListener("click", () => step(-1));
+  $("next").addEventListener("click", () => step(1));
   $("next-open").addEventListener("click", nextOpen);
   $("copy").addEventListener("click", async () => {
-    const text = JSON.stringify({ calls: state.calls, flags: state.flags });
+    const text = JSON.stringify(exportData());
     try { await navigator.clipboard.writeText(text); setStatus(`Copied ${Object.keys(state.calls).length} decisions`); }
     catch {
       const ta = document.createElement("textarea");
@@ -395,17 +445,56 @@ kbd { font-family: var(--font-mono); font-size: .8em; border: 1px solid var(--li
   });
   $("plate-select").addEventListener("change", (e) => go(parseInt(e.target.value, 10)));
 
-  fetch("review.json").then((r) => r.json()).then((data) => {
+  function exportData() {
+    const ids = new Set(state.list.flatMap((p) => itemsOf(p).map((it) => String(it.id))));
+    const calls = Object.fromEntries(Object.entries(state.calls).filter(([id]) => ids.has(id)));
+    const flags = Object.fromEntries(Object.entries(state.flags).filter(([p]) => state.list.includes(+p)));
+    return { reviewer: $("who").value.trim(), batch: state.batch + 1, saved_at: new Date().toISOString(), calls, flags };
+  }
+
+  $("save-file").addEventListener("click", () => {
+    const name = $("who").value.trim();
+    if (!name) { setStatus("Type your name first, so your file can be told apart.", true); $("who").focus(); return; }
+    const data = exportData();
+    const blob = new Blob([JSON.stringify(data, null, 1)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    const tag = state.batch < 0 ? "all" : `batch${state.batch + 1}`;
+    a.download = `crowded-review_${tag}_${name.replace(/[^A-Za-z0-9_-]+/g, "-")}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setStatus(`Saved ${Object.keys(data.calls).length} decisions to ${a.download} in your Downloads folder. Send that file.`);
+  });
+  $("who").addEventListener("change", () => store.set("crowded-review-who", $("who").value.trim()));
+  $("batch").addEventListener("change", (e) => setBatch(parseInt(e.target.value, 10)));
+
+  function start(data) {
     state.data = data;
+    state.batches = makeBatches();
     const local = store.get("crowded-review-calls");
     if (local) { Object.assign(state.calls, local.calls || {}); Object.assign(state.flags, local.flags || {}); }
-    const sel = $("plate-select");
-    data.plates.forEach((_, i) => { const o = document.createElement("option"); o.value = String(i); sel.appendChild(o); });
+    $("who").value = store.get("crowded-review-who") || "";
+    $("save-file").hidden = !OFFLINE;
+    const bs = $("batch");
+    const all = document.createElement("option"); all.value = "-1";
+    all.textContent = `All ${data.plates.length} plates (${data.items.length} spots)`; bs.appendChild(all);
+    state.batches.forEach((b, k) => {
+      const o = document.createElement("option"); o.value = String(k);
+      const spots = b.reduce((a, p) => a + itemsOf(p).length, 0);
+      o.textContent = `Batch ${k + 1}: plates ${b[0] + 1}–${b[b.length - 1] + 1} (${spots} spots)`;
+      bs.appendChild(o);
+    });
+    const savedBatch = store.get("crowded-review-batch");
+    const b = Number.isInteger(savedBatch) && savedBatch < state.batches.length ? savedBatch : -1;
+    bs.value = String(b);
     const saved = store.get("crowded-review-plate");
     state.plate = Number.isInteger(saved) && saved < data.plates.length ? saved : 0;
-    renderPlate();
-    renderProgress();
+    setBatch(b);
     connect();
-  }).catch(() => { $("plate-view").innerHTML = '<div class="empty">The candidate list did not load. Reload the page.</div>'; });
+  }
+
+  if (window.REVIEW_DATA) start(window.REVIEW_DATA);
+  else fetch("review.json").then((r) => r.json()).then(start).catch(() => {
+    $("plate-view").innerHTML = '<div class="empty">The candidate list did not load. Reload the page.</div>';
+  });
 })();
 </script>

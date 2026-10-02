@@ -67,6 +67,22 @@ def test_review_page_decisions_round_trip(tmp_path):
     docs = [{"k": 0, "calls": {"0": "colony", "1": "not"}, "flag": "countable"},
             {"k": 1, "calls": {"2": "unsure"}, "flag": "tntc"}]
     (tmp_path / "plates.json").write_text(json.dumps(docs))
-    from_web(SimpleNamespace(out=str(tmp_path), docs=str(tmp_path / "plates.json")))
+    from_web(SimpleNamespace(out=str(tmp_path), docs=[str(tmp_path / "plates.json")]))
     got = json.loads((tmp_path / "decisions.json").read_text())
     assert got == {"0": "colony", "1": "not", "2": "unsure", "plate:a.jpg": "tntc"}
+
+
+def test_offline_kit_files_merge(tmp_path):
+    import json
+    from types import SimpleNamespace
+
+    from answer_key import from_web
+
+    review = [{"id": 0, "plate": "a.jpg"}, {"id": 1, "plate": "b.jpg"}]
+    (tmp_path / "candidates.json").write_text(json.dumps({"plates": {}, "review": review}))
+    (tmp_path / "r1.json").write_text(json.dumps({"reviewer": "A", "batch": 1, "calls": {"0": "colony"}, "flags": {}}))
+    (tmp_path / "r2.json").write_text(json.dumps({"reviewer": "B", "batch": 2, "calls": {"1": "not"},
+                                                  "flags": {"1": "overgrown"}}))
+    from_web(SimpleNamespace(out=str(tmp_path), docs=[str(tmp_path / "r1.json"), str(tmp_path / "r2.json")]))
+    got = json.loads((tmp_path / "decisions.json").read_text())
+    assert got == {"0": "colony", "1": "not", "plate:b.jpg": "overgrown"}

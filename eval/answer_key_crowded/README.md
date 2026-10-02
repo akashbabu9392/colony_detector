@@ -14,3 +14,15 @@ done, export the page's `plates` documents and run:
     python tools/answer_key.py from-web --out review/crowded --docs plates.json
     python tools/answer_key.py apply --out review/crowded --gold eval/reviewed_train
     python tools/build_training_set.py --dataset data/raw --reviewed eval/reviewed_train ...
+
+## Reviewers without a claude.ai account: offline kit
+
+    python tools/answer_key.py kit --out review/crowded --kit review/colony-review-kit --batches 6
+
+writes `colony-review-kit.zip` (about 45 MB): the same page with its data
+inlined, the plate photos and crop sheets, and `READ ME FIRST.txt`. Each
+technician unzips it, opens `index.html` in Chrome or Edge, types a name,
+picks a batch and clicks **Save decisions file** when done. Merge all
+returned files (and, if used, the online page's documents) in one go:
+
+    python tools/answer_key.py from-web --out review/crowded --docs crowded-review_batch*.json

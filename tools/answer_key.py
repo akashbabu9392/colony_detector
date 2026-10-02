@@ -257,18 +257,78 @@ def web(args) -> int:
     return 0
 
 
+def kit(args) -> int:
+    """Offline review kit: the page with its data inlined (opens from disk, no
+    login, no internet), the photos and crop sheets, and instructions. Each
+    reviewer saves a decisions file and sends it back for `from-web`."""
+    import shutil
+
+    out = Path(args.out)
+    if not (out / "review.json").exists():
+        web(argparse.Namespace(out=args.out, photo_px=args.photo_px))
+    kit_dir = Path(args.kit)
+    if kit_dir.exists():
+        shutil.rmtree(kit_dir)
+    kit_dir.mkdir(parents=True)
+    review = json.loads((out / "review.json").read_text())
+    review["batches"] = args.batches
+    page = (Path(__file__).resolve().parent / "review_page" / "index.html").read_text()
+    inline = "<script>window.REVIEW_DATA = " + json.dumps(review, separators=(",", ":")) + ";</script>"
+    page = page.replace("<!--REVIEW_DATA-->", inline, 1)
+    (kit_dir / "index.html").write_text("<!doctype html><html><head><meta charset=utf-8>"
+                                        "<meta name=viewport content=\"width=device-width,initial-scale=1\">"
+                                        "<style>body{margin:0}[hidden]{display:none!important}</style></head><body>"
+                                        + page + "</body></html>")
+    shutil.copytree(out / "ov", kit_dir / "ov")
+    for f in out.glob("sheet_*.jpg"):
+        shutil.copy(f, kit_dir / f.name)
+    (kit_dir / "READ ME FIRST.txt").write_text(f"""Colony label review - offline kit
+
+1. Unzip this folder anywhere (do not open index.html from inside the zip).
+2. Open index.html in Chrome or Edge (double-click). No login or internet needed.
+3. Type your name, then pick the batch of plates you were given (1 to {args.batches}).
+4. For each numbered spot click Colony / Not / Speck / Unsure (or press C N S U).
+   Open "How to decide" at the top for the rules.
+   If a whole plate is a lawn or hopelessly overgrown, mark it TNTC / Overgrown instead.
+5. Your choices are kept on this computer as you click, so you can close and come back
+   (same computer, same browser, same folder).
+6. When your batch is finished, click "Save decisions file". A file named
+   crowded-review_batchN_<your name>.json goes to your Downloads folder.
+   Send that file back. You can also send a partly finished file; send the newer one later.
+""")
+    zip_path = shutil.make_archive(str(kit_dir), "zip", kit_dir.parent, kit_dir.name)
+    print(f"{len(review['plates'])} plates, {len(review['items'])} spots in {args.batches} batches -> {zip_path}")
+    return 0
+
+
 def from_web(args) -> int:
-    """Shared decisions of the review page (the `plates` docs, as a JSON list
-    of {k, calls, flag}) -> decisions.json for `apply`."""
+    """Review decisions -> decisions.json for `apply`. Accepts the page's
+    shared `plates` documents (a JSON list of {k, calls, flag}) and/or
+    decisions files saved from the offline kit ({reviewer, calls, flags});
+    later files win where two reviewers decided the same spot."""
     out = Path(args.out)
     data = json.loads((out / "candidates.json").read_text())
     names = _plate_order(data)
-    docs = json.loads(Path(args.docs).read_text())
     decisions: dict[str, str] = {}
-    for d in docs:
-        decisions.update({str(k): v for k, v in (d.get("calls") or {}).items()})
-        if d.get("flag") in ("tntc", "overgrown"):
-            decisions[f"plate:{names[int(d['k'])]}"] = d["flag"]
+    who: dict[str, str] = {}
+    conflicts = 0
+    for path in args.docs:
+        raw = json.loads(Path(path).read_text())
+        if isinstance(raw, list):
+            docs = raw
+        else:  # a file saved from the offline kit
+            docs = [{"calls": raw.get("calls", {})}]
+            docs += [{"k": int(k), "flag": v} for k, v in (raw.get("flags") or {}).items()]
+        for d in docs:
+            for k, v in (d.get("calls") or {}).items():
+                if str(k) in decisions and decisions[str(k)] != v and who.get(str(k)) != path:
+                    conflicts += 1
+                decisions[str(k)] = v
+                who[str(k)] = path
+            if d.get("flag") in ("tntc", "overgrown"):
+                decisions[f"plate:{names[int(d['k'])]}"] = d["flag"]
+    if conflicts:
+        print(f"{conflicts} spots were decided differently by two reviewers; the later file was kept")
     (out / "decisions.json").write_text(json.dumps(decisions, indent=0, sort_keys=True))
     print(f"{len(decisions)} decisions -> {out / 'decisions.json'}")
     return 0
@@ -295,9 +355,15 @@ def main() -> int:
     w.add_argument("--photo-px", type=int, default=1100)
     f = sub.add_parser("from-web", help="review page decisions -> decisions.json")
     f.add_argument("--out", required=True)
-    f.add_argument("--docs", required=True, help="JSON list of the page's plates documents")
+    f.add_argument("--docs", required=True, nargs="+",
+                   help="the page's plates documents (JSON list) and/or offline-kit decisions files")
+    k = sub.add_parser("kit", help="offline review kit (zip) for reviewers without a claude.ai account")
+    k.add_argument("--out", required=True)
+    k.add_argument("--kit", required=True, help="kit folder to create; a .zip of it is written next to it")
+    k.add_argument("--batches", type=int, default=6)
+    k.add_argument("--photo-px", type=int, default=900)
     args = ap.parse_args()
-    return {"prepare": prepare, "apply": apply, "web": web, "from-web": from_web}[args.cmd](args)
+    return {"prepare": prepare, "apply": apply, "web": web, "from-web": from_web, "kit": kit}[args.cmd](args)
 
 
 if __name__ == "__main__":
