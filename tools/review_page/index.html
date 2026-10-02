@@ -171,9 +171,10 @@ kbd { font-family: var(--font-mono); font-size: .8em; border: 1px solid var(--li
   const state = { data: null, plate: 0, calls: {}, flags: {}, db: null, user: null, batch: -1, batches: [], list: [] };
   const OFFLINE = !(window.claude && window.claude.use);
   const $ = (id) => document.getElementById(id);
+  const KEY = () => (window.REVIEW_DATA && window.REVIEW_DATA.batch_no ? `b${window.REVIEW_DATA.batch_no}-` : "");
   const store = {
-    get(k) { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch { return null; } },
-    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* storage off */ } },
+    get(k) { try { return JSON.parse(localStorage.getItem(KEY() + k) || "null"); } catch { return null; } },
+    set(k, v) { try { localStorage.setItem(KEY() + k, JSON.stringify(v)); } catch { /* storage off */ } },
   };
 
   function setStatus(text, err = false) { const s = $("status"); s.textContent = text; s.classList.toggle("err", err); }
@@ -449,7 +450,7 @@ kbd { font-family: var(--font-mono); font-size: .8em; border: 1px solid var(--li
     const ids = new Set(state.list.flatMap((p) => itemsOf(p).map((it) => String(it.id))));
     const calls = Object.fromEntries(Object.entries(state.calls).filter(([id]) => ids.has(id)));
     const flags = Object.fromEntries(Object.entries(state.flags).filter(([p]) => state.list.includes(+p)));
-    return { reviewer: $("who").value.trim(), batch: state.batch + 1, saved_at: new Date().toISOString(), calls, flags };
+    return { reviewer: $("who").value.trim(), batch: state.data.batch_no || state.batch + 1, saved_at: new Date().toISOString(), calls, flags };
   }
 
   $("save-file").addEventListener("click", () => {
@@ -459,7 +460,7 @@ kbd { font-family: var(--font-mono); font-size: .8em; border: 1px solid var(--li
     const blob = new Blob([JSON.stringify(data, null, 1)], { type: "application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    const tag = state.batch < 0 ? "all" : `batch${state.batch + 1}`;
+    const tag = state.batch < 0 ? "all" : `batch${state.data.batch_no || state.batch + 1}`;
     a.download = `crowded-review_${tag}_${name.replace(/[^A-Za-z0-9_-]+/g, "-")}.json`;
     document.body.appendChild(a); a.click(); a.remove();
     setStatus(`Saved ${Object.keys(data.calls).length} decisions to ${a.download} in your Downloads folder. Send that file.`);
@@ -469,22 +470,24 @@ kbd { font-family: var(--font-mono); font-size: .8em; border: 1px solid var(--li
 
   function start(data) {
     state.data = data;
-    state.batches = makeBatches();
+    state.batches = data.only ? [data.only] : makeBatches();
     const local = store.get("crowded-review-calls");
     if (local) { Object.assign(state.calls, local.calls || {}); Object.assign(state.flags, local.flags || {}); }
     $("who").value = store.get("crowded-review-who") || "";
     $("save-file").hidden = !OFFLINE;
     const bs = $("batch");
-    const all = document.createElement("option"); all.value = "-1";
-    all.textContent = `All ${data.plates.length} plates (${data.items.length} spots)`; bs.appendChild(all);
+    if (!data.only) {
+      const all = document.createElement("option"); all.value = "-1";
+      all.textContent = `All ${data.plates.length} plates (${data.items.length} spots)`; bs.appendChild(all);
+    }
     state.batches.forEach((b, k) => {
       const o = document.createElement("option"); o.value = String(k);
       const spots = b.reduce((a, p) => a + itemsOf(p).length, 0);
-      o.textContent = `Batch ${k + 1}: plates ${b[0] + 1}–${b[b.length - 1] + 1} (${spots} spots)`;
+      o.textContent = `Batch ${data.batch_no || k + 1}: plates ${b[0] + 1}–${b[b.length - 1] + 1} (${spots} spots)`;
       bs.appendChild(o);
     });
     const savedBatch = store.get("crowded-review-batch");
-    const b = Number.isInteger(savedBatch) && savedBatch < state.batches.length ? savedBatch : -1;
+    const b = data.only ? 0 : Number.isInteger(savedBatch) && savedBatch < state.batches.length ? savedBatch : -1;
     bs.value = String(b);
     const saved = store.get("crowded-review-plate");
     state.plate = Number.isInteger(saved) && saved < data.plates.length ? saved : 0;

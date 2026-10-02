@@ -257,47 +257,78 @@ def web(args) -> int:
     return 0
 
 
+def _batches(review: dict, n: int) -> list[list[int]]:
+    """Contiguous plate batches with about equal spot counts (same split as
+    the review page's makeBatches)."""
+    sizes = [0] * len(review["plates"])
+    for it in review["items"]:
+        sizes[it["p"]] += 1
+    total, out, cur, acc = sum(sizes), [], [], 0
+    for p, sz in enumerate(sizes):
+        cur.append(p)
+        acc += sz
+        if len(out) < n - 1 and acc >= total * (len(out) + 1) / n:
+            out.append(cur)
+            cur = []
+    if cur:
+        out.append(cur)
+    return out
+
+
 def kit(args) -> int:
-    """Offline review kit: the page with its data inlined (opens from disk, no
-    login, no internet), the photos and crop sheets, and instructions. Each
-    reviewer saves a decisions file and sends it back for `from-web`."""
+    """Offline review kits: the page with its data inlined (opens from disk,
+    no login, no internet), photos, crop sheets and instructions. With
+    --per-batch, one small kit per batch holding only that batch's plates.
+    Each reviewer saves a decisions file and sends it back for `from-web`."""
     import shutil
 
     out = Path(args.out)
     if not (out / "review.json").exists():
         web(argparse.Namespace(out=args.out, photo_px=args.photo_px))
-    kit_dir = Path(args.kit)
-    if kit_dir.exists():
-        shutil.rmtree(kit_dir)
-    kit_dir.mkdir(parents=True)
     review = json.loads((out / "review.json").read_text())
     review["batches"] = args.batches
     page = (Path(__file__).resolve().parent / "review_page" / "index.html").read_text()
-    inline = "<script>window.REVIEW_DATA = " + json.dumps(review, separators=(",", ":")) + ";</script>"
-    page = page.replace("<!--REVIEW_DATA-->", inline, 1)
-    (kit_dir / "index.html").write_text("<!doctype html><html><head><meta charset=utf-8>"
-                                        "<meta name=viewport content=\"width=device-width,initial-scale=1\">"
-                                        "<style>body{margin:0}[hidden]{display:none!important}</style></head><body>"
-                                        + page + "</body></html>")
-    shutil.copytree(out / "ov", kit_dir / "ov")
-    for f in out.glob("sheet_*.jpg"):
-        shutil.copy(f, kit_dir / f.name)
-    (kit_dir / "READ ME FIRST.txt").write_text(f"""Colony label review - offline kit
+    jobs = [(None, list(range(len(review["plates"]))))]
+    if args.per_batch:
+        jobs = list(enumerate(_batches(review, args.batches), start=1))
+    for batch_no, plates in jobs:
+        kit_dir = Path(args.kit + (f"-batch{batch_no}" if batch_no else ""))
+        if kit_dir.exists():
+            shutil.rmtree(kit_dir)
+        (kit_dir / "ov").mkdir(parents=True)
+        data = dict(review)
+        if batch_no:
+            data.update(only=plates, batch_no=batch_no)
+        inline = "<script>window.REVIEW_DATA = " + json.dumps(data, separators=(",", ":")) + ";</script>"
+        (kit_dir / "index.html").write_text(
+            "<!doctype html><html><head><meta charset=utf-8>"
+            "<meta name=viewport content=\"width=device-width,initial-scale=1\">"
+            "<style>body{margin:0}[hidden]{display:none!important}</style></head><body>"
+            + page.replace("<!--REVIEW_DATA-->", inline, 1) + "</body></html>")
+        keep = set(plates)
+        for p in keep:
+            shutil.copy(out / review["plates"][p]["ov"], kit_dir / review["plates"][p]["ov"])
+        for sheet in {it["sheet"] for it in review["items"] if it["p"] in keep}:
+            shutil.copy(out / sheet, kit_dir / sheet)
+        which = f"batch {batch_no}" if batch_no else f"the batch you were given (1 to {args.batches})"
+        title = f"Colony label review - offline kit{f' (batch {batch_no})' if batch_no else ''}"
+        (kit_dir / "READ ME FIRST.txt").write_text(f"""{title}
 
 1. Unzip this folder anywhere (do not open index.html from inside the zip).
 2. Open index.html in Chrome or Edge (double-click). No login or internet needed.
-3. Type your name, then pick the batch of plates you were given (1 to {args.batches}).
+3. Type your name. This kit is for {which}.
 4. For each numbered spot click Colony / Not / Speck / Unsure (or press C N S U).
    Open "How to decide" at the top for the rules.
    If a whole plate is a lawn or hopelessly overgrown, mark it TNTC / Overgrown instead.
 5. Your choices are kept on this computer as you click, so you can close and come back
    (same computer, same browser, same folder).
-6. When your batch is finished, click "Save decisions file". A file named
-   crowded-review_batchN_<your name>.json goes to your Downloads folder.
-   Send that file back. You can also send a partly finished file; send the newer one later.
+6. When you finish, click "Save decisions file". A file named
+   crowded-review_batch..._<your name>.json goes to your Downloads folder.
+   Send that file back. A partly finished file is fine too; send the newer one later.
 """)
-    zip_path = shutil.make_archive(str(kit_dir), "zip", kit_dir.parent, kit_dir.name)
-    print(f"{len(review['plates'])} plates, {len(review['items'])} spots in {args.batches} batches -> {zip_path}")
+        zip_path = shutil.make_archive(str(kit_dir), "zip", kit_dir.parent, kit_dir.name)
+        spots = sum(1 for it in review["items"] if it["p"] in keep)
+        print(f"{kit_dir.name}: {len(keep)} plates, {spots} spots -> {zip_path}")
     return 0
 
 
@@ -361,6 +392,7 @@ def main() -> int:
     k.add_argument("--out", required=True)
     k.add_argument("--kit", required=True, help="kit folder to create; a .zip of it is written next to it")
     k.add_argument("--batches", type=int, default=6)
+    k.add_argument("--per-batch", action="store_true", help="one small kit per batch")
     k.add_argument("--photo-px", type=int, default=900)
     args = ap.parse_args()
     return {"prepare": prepare, "apply": apply, "web": web, "from-web": from_web, "kit": kit}[args.cmd](args)

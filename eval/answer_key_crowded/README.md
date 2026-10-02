@@ -17,9 +17,9 @@ done, export the page's `plates` documents and run:
 
 ## Reviewers without a claude.ai account: offline kit
 
-    python tools/answer_key.py kit --out review/crowded --kit review/colony-review-kit --batches 6
+    python tools/answer_key.py kit --out review/crowded --kit review/colony-review --batches 6 --per-batch
 
-writes `colony-review-kit.zip` (about 45 MB): the same page with its data
+writes one zip per batch (5-10 MB each; without --per-batch, one 45 MB zip): the same page with its data
 inlined, the plate photos and crop sheets, and `READ ME FIRST.txt`. Each
 technician unzips it, opens `index.html` in Chrome or Edge, types a name,
 picks a batch and clicks **Save decisions file** when done. Merge all
