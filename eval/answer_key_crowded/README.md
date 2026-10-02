@@ -34,3 +34,14 @@ served at https://akashbabu9392.github.io/colony_detector/ once Settings →
 Pages → Source is "Deploy from a branch", branch `gh-pages`, folder `/ (root)`.
 Rebuild it with `answer_key.py kit` (without --per-batch) and replace the
 branch contents. Decisions still come back as saved files.
+
+## Shared saving for the hosted page (Google Sheet)
+
+To make every reviewer's clicks land in one place (like the claude.ai page),
+deploy `tools/review_page/sheet_backend.gs` as a Google Apps Script web app
+on a Google Sheet (steps in the file's header), then build the site with
+`answer_key.py kit ... --sheet-url <web app URL>`. Each decision is appended
+to the sheet's `decisions` tab with the reviewer's name and time; pages pull
+everyone's latest decisions every 20 seconds. Open the web app URL in a
+browser and save the JSON it shows, then merge it with
+`answer_key.py from-web --docs sheet.json`.

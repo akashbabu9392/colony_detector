@@ -299,6 +299,8 @@ def kit(args) -> int:
         data = dict(review)
         if batch_no:
             data.update(only=plates, batch_no=batch_no)
+        if args.sheet_url:
+            data["sheet_url"] = args.sheet_url
         inline = "<script>window.REVIEW_DATA = " + json.dumps(data, separators=(",", ":")) + ";</script>"
         (kit_dir / "index.html").write_text(
             "<!doctype html><html><head><meta charset=utf-8>"
@@ -345,7 +347,10 @@ def from_web(args) -> int:
     conflicts = 0
     for path in args.docs:
         raw = json.loads(Path(path).read_text())
-        if isinstance(raw, list):
+        if isinstance(raw, dict) and "latest" in raw:  # the shared sheet's /exec output
+            docs = [{"calls": {k: v[0] for k, v in raw["latest"].items() if not k.startswith("plate:")}}]
+            docs += [{"k": int(k[6:]), "flag": v[0]} for k, v in raw["latest"].items() if k.startswith("plate:")]
+        elif isinstance(raw, list):
             docs = raw
         else:  # a file saved from the offline kit
             docs = [{"calls": raw.get("calls", {})}]
@@ -393,6 +398,7 @@ def main() -> int:
     k.add_argument("--kit", required=True, help="kit folder to create; a .zip of it is written next to it")
     k.add_argument("--batches", type=int, default=6)
     k.add_argument("--per-batch", action="store_true", help="one small kit per batch")
+    k.add_argument("--sheet-url", help="Google Apps Script web-app URL (review_page/sheet_backend.gs): shared saving")
     k.add_argument("--photo-px", type=int, default=900)
     args = ap.parse_args()
     return {"prepare": prepare, "apply": apply, "web": web, "from-web": from_web, "kit": kit}[args.cmd](args)

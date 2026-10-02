@@ -170,6 +170,8 @@ kbd { font-family: var(--font-mono); font-size: .8em; border: 1px solid var(--li
   const KIND_LABEL = { label_only: "label only", model_only: "model only", huge: "very large" };
   const state = { data: null, plate: 0, calls: {}, flags: {}, db: null, user: null, batch: -1, batches: [], list: [] };
   const OFFLINE = !(window.claude && window.claude.use);
+  // Shared Google Sheet (tools/review_page/sheet_backend.gs) for the hosted page.
+  const SHEET_URL = OFFLINE && window.REVIEW_DATA && window.REVIEW_DATA.sheet_url || "";
   const $ = (id) => document.getElementById(id);
   const KEY = () => (window.REVIEW_DATA && window.REVIEW_DATA.batch_no ? `b${window.REVIEW_DATA.batch_no}-` : "");
   const store = {
@@ -323,6 +325,7 @@ kbd { font-family: var(--font-mono); font-size: .8em; border: 1px solid var(--li
     if (patch.flag) cur.flag = patch.flag;
     pending.set(p, cur);
     persistLocal();
+    if (SHEET_URL) { clearTimeout(sheetTimer); sheetTimer = setTimeout(sheetFlush, 700); setStatus("Saving…"); return; }
     if (!state.db) {
       setStatus(OFFLINE ? "Saved on this computer. When you finish, click Save decisions file and send the file."
         : "Saved in this browser only. Use Copy decisions to send them.");
@@ -401,7 +404,72 @@ kbd { font-family: var(--font-mono); font-size: .8em; border: 1px solid var(--li
     setStatus(OFFLINE ? "Every plate in your batch is finished. Click Save decisions file and send it." : "Every plate in this batch is finished.");
   }
 
+  // ---- shared Google Sheet ----
+  let sheetTimer = null, sheetBusy = false;
+
+  function applyLatest(latest) {
+    const people = new Set();
+    for (const [key, [v, who]] of Object.entries(latest)) {
+      if (who) people.add(who);
+      if (key.startsWith("plate:")) {
+        const p = parseInt(key.slice(6), 10);
+        if (!pending.get(p)?.flag) state.flags[p] = v;
+      } else {
+        const it = state.data.items[+key];
+        if (it && pending.get(it.p)?.calls?.[key]) continue;
+        state.calls[key] = v;
+      }
+    }
+    persistLocal();
+    document.querySelectorAll(".tile").forEach((t) => paintTile(t.dataset.id));
+    document.querySelectorAll("#flag-seg button").forEach((b, j) => b.setAttribute("aria-pressed",
+      String((state.flags[state.plate] || "countable") === ["countable", "overgrown", "tntc"][j])));
+    renderProgress();
+    return people.size;
+  }
+
+  async function sheetPull() {
+    const r = await fetch(SHEET_URL, { cache: "no-store" });
+    if (!r.ok) throw new Error("http " + r.status);
+    const data = await r.json();
+    return { people: applyLatest(data.latest || {}), latest: data.latest || {} };
+  }
+
+  async function sheetFlush() {
+    if (sheetBusy || !pending.size) return;
+    const reviewer = $("who").value.trim();
+    if (!reviewer) { setStatus("Type your name at the top. Your choices are kept and are sent as soon as you do.", true); $("who").focus(); return; }
+    sheetBusy = true;
+    const batch = new Map(pending);
+    pending.clear();
+    const body = { reviewer, calls: {}, flags: {} };
+    for (const [p, v] of batch) { Object.assign(body.calls, v.calls); if (v.flag) body.flags[p] = v.flag; }
+    try {
+      await fetch(SHEET_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(body) });
+      const { latest, people } = await sheetPull();
+      const missing = Object.keys(body.calls).filter((k) => !latest[k]);
+      if (missing.length) throw new Error("not stored");
+      setStatus(`Saved for everyone · ${people} reviewer${people === 1 ? "" : "s"} so far`);
+    } catch (e) {
+      for (const [p, v] of batch) {
+        const cur = pending.get(p) || { calls: {} };
+        pending.set(p, { calls: { ...v.calls, ...cur.calls }, flag: cur.flag || v.flag });
+      }
+      setStatus("Not saved yet (no connection?). Your choices are kept here and will be sent again.", true);
+      clearTimeout(sheetTimer); sheetTimer = setTimeout(sheetFlush, 15000);
+    } finally { sheetBusy = false; }
+    if (pending.size) { clearTimeout(sheetTimer); sheetTimer = setTimeout(sheetFlush, 700); }
+  }
+
   async function connect() {
+    if (SHEET_URL) {
+      try {
+        const { people } = await sheetPull();
+        setStatus(`Connected · decisions are shared · ${people} reviewer${people === 1 ? "" : "s"} so far`);
+      } catch { setStatus("Cannot reach the shared sheet right now. Your choices are kept here and sent later.", true); }
+      setInterval(() => { if (document.visibilityState === "visible" && !sheetBusy) sheetPull().catch(() => {}); }, 20000);
+      return;
+    }
     if (OFFLINE) { setStatus("Offline kit: decisions are saved on this computer as you click."); return; }
     const [db, user] = await Promise.all([window.claude.use("db"), window.claude.use("user")]);
     state.user = user;
@@ -465,7 +533,10 @@ kbd { font-family: var(--font-mono); font-size: .8em; border: 1px solid var(--li
     document.body.appendChild(a); a.click(); a.remove();
     setStatus(`Saved ${Object.keys(data.calls).length} decisions to ${a.download} in your Downloads folder. Send that file.`);
   });
-  $("who").addEventListener("change", () => store.set("crowded-review-who", $("who").value.trim()));
+  $("who").addEventListener("change", () => {
+    store.set("crowded-review-who", $("who").value.trim());
+    if (SHEET_URL && pending.size) sheetFlush();
+  });
   $("batch").addEventListener("change", (e) => setBatch(parseInt(e.target.value, 10)));
 
   function start(data) {
@@ -475,6 +546,7 @@ kbd { font-family: var(--font-mono); font-size: .8em; border: 1px solid var(--li
     if (local) { Object.assign(state.calls, local.calls || {}); Object.assign(state.flags, local.flags || {}); }
     $("who").value = store.get("crowded-review-who") || "";
     $("save-file").hidden = !OFFLINE;
+    if (SHEET_URL) $("save-file").textContent = "Download my decisions (backup)";
     const bs = $("batch");
     if (!data.only) {
       const all = document.createElement("option"); all.value = "-1";

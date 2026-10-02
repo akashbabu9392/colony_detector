@@ -86,3 +86,19 @@ def test_offline_kit_files_merge(tmp_path):
     from_web(SimpleNamespace(out=str(tmp_path), docs=[str(tmp_path / "r1.json"), str(tmp_path / "r2.json")]))
     got = json.loads((tmp_path / "decisions.json").read_text())
     assert got == {"0": "colony", "1": "not", "plate:b.jpg": "overgrown"}
+
+
+def test_shared_sheet_export_merges(tmp_path):
+    import json
+    from types import SimpleNamespace
+
+    from answer_key import from_web
+
+    review = [{"id": 0, "plate": "a.jpg"}, {"id": 1, "plate": "b.jpg"}]
+    (tmp_path / "candidates.json").write_text(json.dumps({"plates": {}, "review": review}))
+    sheet = {"latest": {"0": ["colony", "Priya", "t1"], "1": ["unsure", "Ravi", "t2"],
+                        "plate:1": ["tntc", "Ravi", "t3"]}, "rows": 4}
+    (tmp_path / "sheet.json").write_text(json.dumps(sheet))
+    from_web(SimpleNamespace(out=str(tmp_path), docs=[str(tmp_path / "sheet.json")]))
+    got = json.loads((tmp_path / "decisions.json").read_text())
+    assert got == {"0": "colony", "1": "unsure", "plate:b.jpg": "tntc"}
