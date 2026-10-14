@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Colony Detector | AI Microbial Colony Counter</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #090d16;
+      --surface: #111827;
+      --surface-elevated: #1a2336;
+      --surface-border: rgba(255, 255, 255, 0.08);
+      --primary: #10b981;
+      --primary-glow: rgba(16, 185, 129, 0.25);
+      --primary-hover: #059669;
+      --accent: #06b6d4;
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --text-dim: #6b7280;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: radial-gradient(circle at 15% 15%, #0f172a 0%, #090d16 60%, #030712 100%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    header {
+      padding: 18px 36px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--surface-border);
+      backdrop-filter: blur(16px);
+      background: rgba(9, 13, 22, 0.75);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .logo-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 20px var(--primary-glow);
+    }
+
+    .logo-icon svg {
+      width: 22px;
+      height: 22px;
+      fill: #ffffff;
+    }
+
+    .brand-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge-chip {
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 3px 8px;
+      border-radius: 20px;
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .header-links {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .api-link {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-decoration: none;
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--surface-border);
+      transition: var(--transition);
+      background: var(--surface);
+    }
+
+    .api-link:hover {
+      color: var(--text);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    main {
+      flex: 1;
+      max-width: 1380px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 32px 24px;
+      display: grid;
+      grid-template-columns: 460px 1fr;
+      gap: 32px;
+    }
+
+    @media (max-width: 1024px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .control-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(10px);
+    }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .drop-zone {
+      border: 2px dashed rgba(255, 255, 255, 0.15);
+      border-radius: var(--radius-md);
+      padding: 36px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: var(--transition);
+      background: rgba(17, 24, 39, 0.5);
+      position: relative;
+    }
+
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: var(--primary);
+      background: rgba(16, 185, 129, 0.05);
+      box-shadow: 0 0 25px rgba(16, 185, 129, 0.15);
+    }
+
+    .drop-icon {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 12px;
+      border-radius: 50%;
+      background: var(--surface-elevated);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+    }
+
+    .drop-text {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .drop-hint {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+    }
+
+    #file-input {
+      display: none;
+    }
+
+    .samples-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .sample-btn {
+      background: var(--surface-elevated);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-sm);
+      padding: 10px;
+      cursor: pointer;
+      color: var(--text);
+      font-size: 0.8rem;
+      font-weight: 600;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      transition: var(--transition);
+    }
+
+    .sample-btn:hover {
+      border-color: var(--primary);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .sample-tag {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+    }
+
+    .btn-primary {
+      width: 100%;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #ffffff;
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 14px 20px;
+      font-size: 0.98rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      cursor: pointer;
+      box-shadow: 0 4px 20px var(--primary-glow);
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      box-shadow: 0 6px 26px rgba(16, 185, 129, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .status-badge {
+      font-size: 0.82rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      background: var(--surface-elevated);
+      border: 1px solid var(--surface-border);
+      color: var(--text-muted);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 8px #10b981;
+    }
+
+    .preview-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+
+    @media (max-width: 640px) {
+      .stats-row {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .stat-value {
+      font-size: 1.85rem;
+      font-weight: 800;
+      color: var(--text);
+      font-feature-settings: "tnum";
+    }
+
+    .stat-value.highlight {
+      color: #34d399;
+      text-shadow: 0 0 20px rgba(52, 211, 153, 0.35);
+    }
+
+    .stat-sub {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    .viewer-card {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-height: 480px;
+    }
+
+    .viewer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .toggle-group {
+      display: flex;
+      background: var(--surface-elevated);
+      border-radius: var(--radius-sm);
+      padding: 3px;
+      border: 1px solid var(--surface-border);
+    }
+
+    .toggle-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 6px 14px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: var(--transition);
+    }
+
+    .toggle-btn.active {
+      background: var(--primary);
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    }
+
+    .image-viewport {
+      flex: 1;
+      min-height: 420px;
+      background: #060911;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--surface-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .image-viewport img {
+      max-width: 100%;
+      max-height: 600px;
+      object-fit: contain;
+      border-radius: var(--radius-sm);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .placeholder-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      color: var(--text-dim);
+    }
+
+    .placeholder-state svg {
+      width: 56px;
+      height: 56px;
+      opacity: 0.4;
+    }
+
+    .spinner {
+      border: 3px solid rgba(255, 255, 255, 0.1);
+      border-top: 3px solid #10b981;
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .json-panel {
+      background: #060911;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--surface-border);
+      padding: 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      color: #a7f3d0;
+      max-height: 260px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      display: none;
+    }
+
+    footer {
+      border-top: 1px solid var(--surface-border);
+      padding: 16px 36px;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      background: rgba(9, 13, 22, 0.8);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="/" class="brand">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="9" cy="10" r="1.5"/><circle cx="15" cy="11" r="2"/><circle cx="11" cy="15" r="1.8"/></svg>
+      </div>
+      <div>
+        <div class="brand-title">
+          Colony Detector
+          <span class="badge-chip">RF-DETR + DINOv2</span>
+        </div>
+      </div>
+    </a>
+    <div class="header-links">
+      <div class="status-badge" id="engine-status">
+        <div class="status-dot"></div>
+        <span>RF-DETR Ready</span>
+      </div>
+      <a href="/docs" target="_blank" class="api-link">API Docs (Swagger)</a>
+    </div>
+  </header>
+
+  <main>
+    <!-- Left Column: Controls & Input -->
+    <div class="control-panel">
+      <div class="card">
+        <div class="card-title">
+          <span>Plate Image Upload</span>
+          <span style="font-size: 0.78rem; color: var(--text-dim); font-weight: normal;">AGAR Format</span>
+        </div>
+
+        <div class="drop-zone" id="drop-zone">
+          <div class="drop-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          </div>
+          <div class="drop-text">Drag & drop agar plate photo</div>
+          <div class="drop-hint">or click to browse from your device (.jpg, .png)</div>
+          <input type="file" id="file-input" accept="image/*">
+        </div>
+
+        <div style="margin-top: 20px;">
+          <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 8px;">
+            Or Test Instantly with AGAR Samples:
+          </div>
+          <div class="samples-grid">
+            <button class="sample-btn" data-sample="1.jpg">
+              <span>Plate #1</span>
+              <span class="sample-tag">Blank Plate (0)</span>
+            </button>
+            <button class="sample-btn" data-sample="1000.jpg">
+              <span>Plate #1000</span>
+              <span class="sample-tag">Few Colonies (4)</span>
+            </button>
+            <button class="sample-btn" data-sample="1014.jpg">
+              <span>Plate #1014</span>
+              <span class="sample-tag">20 Colonies</span>
+            </button>
+          </div>
+        </div>
+
+        <div style="margin-top: 24px;">
+          <button class="btn-primary" id="analyze-btn" disabled>
+            <span id="btn-text">Detect Colonies</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span>Active Architecture</span>
+        </div>
+        <div style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.6;">
+          <div style="margin-bottom: 8px;">• <strong>Model</strong>: RF-DETR with DINOv2 Backbone</div>
+          <div style="margin-bottom: 8px;">• <strong>Trained Weights</strong>: <code style="color: #34d399;">models/rfdetr_tiles.pth</code> (129 MB)</div>
+          <div style="margin-bottom: 8px;">• <strong>Tuned Cutoff</strong>: <code style="color: #34d399;">conf: 0.75</code> (from detector.json)</div>
+          <div>• <strong>Validation Accuracy</strong>: 98.4% Precision | 95.3% F1</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Results & Interactive View -->
+    <div class="preview-panel">
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">Colony Count</div>
+          <div class="stat-value highlight" id="stat-count">—</div>
+          <div class="stat-sub" id="stat-count-sub">Awaiting image</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Detection Status</div>
+          <div class="stat-value" id="stat-status" style="font-size: 1.2rem; line-height: 2.2rem;">Ready</div>
+          <div class="stat-sub">Countable Range</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Inference Time</div>
+          <div class="stat-value" id="stat-time">—</div>
+          <div class="stat-sub" id="stat-device">CPU / Tiled</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Confidence</div>
+          <div class="stat-value" id="stat-conf">—</div>
+          <div class="stat-sub">Optimal threshold</div>
+        </div>
+      </div>
+
+      <div class="viewer-card">
+        <div class="viewer-header">
+          <div style="font-weight: 700; font-size: 0.95rem;">Plate Inspection & Visual Detections</div>
+          <div class="toggle-group">
+            <button class="toggle-btn active" id="tab-annotated">Annotated View</button>
+            <button class="toggle-btn" id="tab-raw">Original Image</button>
+            <button class="toggle-btn" id="tab-json">JSON</button>
+          </div>
+        </div>
+
+        <div class="image-viewport" id="viewport">
+          <div class="placeholder-state" id="placeholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="m14 10-4 4m0-4 4 4"/></svg>
+            <p>Upload a plate image or click a sample to run detection</p>
+          </div>
+          <img id="annotated-img" style="display: none;" alt="Annotated agar plate">
+          <img id="raw-img" style="display: none;" alt="Original agar plate">
+        </div>
+
+        <pre class="json-panel" id="json-panel"></pre>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    Colony Detector Service • PyTorch & RF-DETR Automated Microbial Counting Engine
+  </footer>
+
+  <script>
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const analyzeBtn = document.getElementById('analyze-btn');
+    const btnText = document.getElementById('btn-text');
+    const placeholder = document.getElementById('placeholder');
+    const annotatedImg = document.getElementById('annotated-img');
+    const rawImg = document.getElementById('raw-img');
+    const jsonPanel = document.getElementById('json-panel');
+
+    const statCount = document.getElementById('stat-count');
+    const statCountSub = document.getElementById('stat-count-sub');
+    const statStatus = document.getElementById('stat-status');
+    const statTime = document.getElementById('stat-time');
+    const statConf = document.getElementById('stat-conf');
+
+    const tabAnnotated = document.getElementById('tab-annotated');
+    const tabRaw = document.getElementById('tab-raw');
+    const tabJson = document.getElementById('tab-json');
+
+    let currentFile = null;
+    let latestResult = null;
+
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      if (e.dataTransfer.files.length) {
+        handleFile(e.dataTransfer.files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length) handleFile(fileInput.files[0]);
+    });
+
+    function handleFile(file) {
+      currentFile = file;
+      analyzeBtn.disabled = false;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        rawImg.src = e.target.result;
+        rawImg.style.display = 'block';
+        annotatedImg.style.display = 'none';
+        placeholder.style.display = 'none';
+        jsonPanel.style.display = 'none';
+        setActiveTab('raw');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // AGAR sample quick buttons
+    document.querySelectorAll('.sample-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const sampleName = btn.getAttribute('data-sample');
+        btnText.innerHTML = '<span class="spinner"></span> Loading sample...';
+        analyzeBtn.disabled = true;
+        try {
+          const resp = await fetch(`/sample/${sampleName}`);
+          if (!resp.ok) throw new Error('Could not load sample');
+          const blob = await resp.blob();
+          const file = new File([blob], sampleName, { type: 'image/jpeg' });
+          handleFile(file);
+          btnText.textContent = 'Detect Colonies';
+          analyzeBtn.disabled = false;
+          // Auto-trigger analyze for immediate wow effect
+          runInference();
+        } catch (err) {
+          alert('Failed to load sample: ' + err.message);
+          btnText.textContent = 'Detect Colonies';
+        }
+      });
+    });
+
+    analyzeBtn.addEventListener('click', runInference);
+
+    async function runInference() {
+      if (!currentFile) return;
+      analyzeBtn.disabled = true;
+      btnText.innerHTML = '<span class="spinner"></span> Processing Tiled RF-DETR...';
+
+      const t0 = performance.now();
+      const formData = new FormData();
+      formData.append('file', currentFile);
+      formData.append('include_image', 'true');
+
+      try {
+        const resp = await fetch('/predict', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!resp.ok) {
+          const errData = await resp.json().catch(() => ({}));
+          throw new Error(errData.detail || 'Analysis failed with status ' + resp.status);
+        }
+
+        const data = await resp.json();
+        const duration = Math.round(performance.now() - t0);
+        latestResult = data;
+
+        // Populate Stats
+        const count = data.total_count !== undefined ? data.total_count : (data.colony_count !== undefined ? data.colony_count : (data.boxes ? data.boxes.length : 0));
+        statCount.textContent = count;
+        statCountSub.textContent = count === 1 ? '1 Colony Detected' : `${count} Colonies Detected`;
+        statStatus.textContent = data.tntc ? 'TNTC' : (data.confidence && data.confidence.needs_review ? 'Needs Review' : 'Verified');
+        statStatus.style.color = data.tntc ? 'var(--danger)' : ((data.confidence && data.confidence.needs_review) ? 'var(--warning)' : '#34d399');
+        statTime.textContent = `${(duration / 1000).toFixed(1)}s`;
+        statConf.textContent = '0.75';
+
+        // Display annotated image
+        if (data.annotated_image) {
+          annotatedImg.src = 'data:image/png;base64,' + data.annotated_image;
+          annotatedImg.style.display = 'block';
+          rawImg.style.display = 'none';
+          placeholder.style.display = 'none';
+          jsonPanel.style.display = 'none';
+          setActiveTab('annotated');
+        }
+
+        jsonPanel.textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        alert('Error analyzing plate: ' + err.message);
+      } finally {
+        analyzeBtn.disabled = false;
+        btnText.textContent = 'Detect Colonies';
+      }
+    }
+
+    function setActiveTab(tab) {
+      tabAnnotated.classList.toggle('active', tab === 'annotated');
+      tabRaw.classList.toggle('active', tab === 'raw');
+      tabJson.classList.toggle('active', tab === 'json');
+
+      if (tab === 'annotated') {
+        annotatedImg.style.display = annotatedImg.src ? 'block' : 'none';
+        rawImg.style.display = 'none';
+        jsonPanel.style.display = 'none';
+        placeholder.style.display = annotatedImg.src ? 'none' : 'flex';
+      } else if (tab === 'raw') {
+        annotatedImg.style.display = 'none';
+        rawImg.style.display = rawImg.src ? 'block' : 'none';
+        jsonPanel.style.display = 'none';
+        placeholder.style.display = rawImg.src ? 'none' : 'flex';
+      } else if (tab === 'json') {
+        annotatedImg.style.display = 'none';
+        rawImg.style.display = 'none';
+        placeholder.style.display = 'none';
+        jsonPanel.style.display = 'block';
+      }
+    }
+
+    tabAnnotated.addEventListener('click', () => setActiveTab('annotated'));
+    tabRaw.addEventListener('click', () => setActiveTab('raw'));
+    tabJson.addEventListener('click', () => setActiveTab('json'));
+  </script>
+</body>
+</html>

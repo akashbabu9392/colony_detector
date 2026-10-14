@@ -264,6 +264,8 @@ def main() -> int:
     ap.add_argument("--repair-weights", help="RF-DETR checkpoint used to add confident missed colonies")
     ap.add_argument("--repair-conf", type=float, default=0.9)
     ap.add_argument("--repair-min-mm", type=float, default=0.5)
+    ap.add_argument("--max-plates", type=int, default=0,
+                    help="stop after processing this many plates (0 = process all)")
     ap.add_argument("--coco", action="store_true", help="also write COCO json (for RF-DETR)")
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
@@ -274,8 +276,12 @@ def main() -> int:
         {"id": i, "name": n, "supercategory": "colony"} for i, n in enumerate(NAMES)]} for s in ("train", "valid")}
     n_tiles = {"train": 0, "valid": 0}
     n_boxes = {"train": 0, "valid": 0}
+    n_plates = 0
     ann_id = 0
     for name, img, boxes, src_split in collect(args):
+        if args.max_plates > 0 and n_plates >= args.max_plates:
+            print(f"Reached max plates limit: {args.max_plates}")
+            break
         split = src_split if src_split in ("train", "valid") else ("valid" if rng.random() < args.val else "train")
         (out / "images" / split).mkdir(parents=True, exist_ok=True)
         (out / "labels" / split).mkdir(parents=True, exist_ok=True)
@@ -298,6 +304,7 @@ def main() -> int:
                     ann_id += 1
             n_tiles[split] += 1
             n_boxes[split] += len(labels)
+        n_plates += 1
         print(f"{name}: {len(boxes)} colonies -> {split}")
 
     (out / "data.yaml").write_text(

@@ -13,9 +13,11 @@ import asyncio
 import hmac
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 import numpy as np
 from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadFile
+from fastapi.responses import FileResponse, HTMLResponse
 
 from colony_detector import __version__
 from colony_detector.config import Settings
@@ -109,3 +111,27 @@ async def predict(
 
 # Alias with a more descriptive name for direct API users.
 app.post("/v1/count", dependencies=[Depends(_auth)])(predict)
+
+
+@app.get("/", response_class=HTMLResponse)
+@app.get("/ui", response_class=HTMLResponse)
+def index_ui() -> HTMLResponse:
+    ui_path = Path(__file__).parent / "ui.html"
+    if ui_path.is_file():
+        return HTMLResponse(ui_path.read_text(encoding="utf-8"))
+    return HTMLResponse("<h1>Colony Detector API</h1><p>Visit <a href='/docs'>/docs</a> for Swagger documentation.</p>")
+
+
+@app.get("/sample/{filename}")
+def get_sample(filename: str):
+    safe_name = Path(filename).name
+    candidates = [
+        Path(__file__).parent.parent / "data" / "agar" / "OpenDataLab___AGAR" / "raw" / "dataset" / safe_name,
+        Path(__file__).parent.parent / "data" / "samples" / safe_name,
+        Path(__file__).parent.parent / "data" / safe_name,
+    ]
+    for c in candidates:
+        if c.is_file():
+            return FileResponse(c, media_type="image/jpeg")
+    raise HTTPException(status_code=404, detail="sample image not found")
+
