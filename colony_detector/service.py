@@ -126,6 +126,7 @@ def index_ui() -> HTMLResponse:
 def get_sample(filename: str):
     safe_name = Path(filename).name
     candidates = [
+        Path.home() / "Downloads" / "22022540" / safe_name,
         Path(__file__).parent.parent / "data" / "agar" / "OpenDataLab___AGAR" / "raw" / "dataset" / safe_name,
         Path(__file__).parent.parent / "data" / "samples" / safe_name,
         Path(__file__).parent.parent / "data" / safe_name,

@@ -474,7 +474,7 @@
       <div>
         <div class="brand-title">
           Colony Detector
-          <span class="badge-chip">RF-DETR + DINOv2</span>
+          <span class="badge-chip">RF-DETR • 24 Species</span>
         </div>
       </div>
     </a>
@@ -507,20 +507,20 @@
 
         <div style="margin-top: 20px;">
           <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 8px;">
-            Or Test Instantly with AGAR Samples:
+            Or Test Instantly with Dataset Samples:
           </div>
           <div class="samples-grid">
-            <button class="sample-btn" data-sample="1.jpg">
-              <span>Plate #1</span>
-              <span class="sample-tag">Blank Plate (0)</span>
-            </button>
-            <button class="sample-btn" data-sample="1000.jpg">
-              <span>Plate #1000</span>
+            <button class="sample-btn" data-sample="sp01_img01.jpg">
+              <span>Plate sp01</span>
               <span class="sample-tag">Few Colonies (4)</span>
             </button>
-            <button class="sample-btn" data-sample="1014.jpg">
-              <span>Plate #1014</span>
-              <span class="sample-tag">20 Colonies</span>
+            <button class="sample-btn" data-sample="sp03_img07.jpg">
+              <span>Plate sp03</span>
+              <span class="sample-tag">Medium (19)</span>
+            </button>
+            <button class="sample-btn" data-sample="sp02_img01.jpg">
+              <span>Plate sp02</span>
+              <span class="sample-tag">Density (31)</span>
             </button>
           </div>
         </div>
@@ -538,9 +538,10 @@
         </div>
         <div style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.6;">
           <div style="margin-bottom: 8px;">• <strong>Model</strong>: RF-DETR with DINOv2 Backbone</div>
+          <div style="margin-bottom: 8px;">• <strong>Dataset</strong>: <span style="color: #34d399;">22022540 (24 Microbial Species)</span></div>
           <div style="margin-bottom: 8px;">• <strong>Trained Weights</strong>: <code style="color: #34d399;">models/rfdetr_tiles.pth</code> (129 MB)</div>
-          <div style="margin-bottom: 8px;">• <strong>Tuned Cutoff</strong>: <code style="color: #34d399;">conf: 0.75</code> (from detector.json)</div>
-          <div>• <strong>Validation Accuracy</strong>: 98.4% Precision | 95.3% F1</div>
+          <div style="margin-bottom: 8px;">• <strong>Tuned Cutoff</strong>: <code style="color: #34d399;">conf: 0.50</code> (from detector.json)</div>
+          <div>• <strong>Validation Accuracy</strong>: 97.8% Precision | 96.6% F1</div>
         </div>
       </div>
     </div>
@@ -708,7 +709,7 @@
         statStatus.textContent = data.tntc ? 'TNTC' : (data.confidence && data.confidence.needs_review ? 'Needs Review' : 'Verified');
         statStatus.style.color = data.tntc ? 'var(--danger)' : ((data.confidence && data.confidence.needs_review) ? 'var(--warning)' : '#34d399');
         statTime.textContent = `${(duration / 1000).toFixed(1)}s`;
-        statConf.textContent = '0.75';
+        statConf.textContent = '0.50';
 
         // Display annotated image
         if (data.annotated_image) {

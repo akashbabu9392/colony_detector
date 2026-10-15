@@ -128,20 +128,22 @@ def collect(args):
             clean = LabelCleaner(args.min_label_mm, args.dish_mm, args.repair_weights, args.repair_conf,
                                  args.repair_min_mm)
         n_reviewed = 0
-        for smp in load_dataset(args.dataset):
-            if smp.boxes is None:
-                continue  # count-only images cannot train a detector
-            if smp.split == "test":
-                continue  # keep the provided test split held out for evaluate.py
-            img = read_image(smp.image)
-            fixed = Path(args.reviewed) / f"{smp.image.stem}.json" if args.reviewed else None
-            if fixed is not None and fixed.exists():
-                g = json.loads(fixed.read_text())
-                boxes = boxes_from_points(g["points"] + g.get("small_specks", []))
-                n_reviewed += 1
-            else:
-                boxes = clean(img, smp.boxes) if clean else smp.boxes
-            yield smp.image.stem, img, boxes, smp.split
+        dataset_dirs = args.dataset if isinstance(args.dataset, list) else [args.dataset]
+        for ds in dataset_dirs:
+            for smp in load_dataset(ds):
+                if smp.boxes is None:
+                    continue  # count-only images cannot train a detector
+                if smp.split == "test":
+                    continue  # keep the provided test split held out for evaluate.py
+                img = read_image(smp.image)
+                fixed = Path(args.reviewed) / f"{smp.image.stem}.json" if args.reviewed else None
+                if fixed is not None and fixed.exists():
+                    g = json.loads(fixed.read_text())
+                    boxes = boxes_from_points(g["points"] + g.get("small_specks", []))
+                    n_reviewed += 1
+                else:
+                    boxes = clean(img, smp.boxes) if clean else smp.boxes
+                yield smp.image.stem, img, boxes, smp.split
         if args.reviewed:
             print(f"reviewed labels used for {n_reviewed} plates")
         if clean:
@@ -243,7 +245,7 @@ def tile_plate(img, boxes, tile: int, overlap: float, empty_keep: float, rng: ra
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--dataset", help="labelled dataset folder (COCO / YOLO / AGAR / points), auto-detected")
+    ap.add_argument("--dataset", nargs="+", help="one or more labelled dataset folders (COCO / YOLO / AGAR / points), auto-detected")
     ap.add_argument("--images")
     ap.add_argument("--gold", default="eval/gold")
     ap.add_argument("--yolo-labels")
