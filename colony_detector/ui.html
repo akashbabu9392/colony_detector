@@ -13,9 +13,9 @@
       --surface: #111827;
       --surface-elevated: #1a2336;
       --surface-border: rgba(255, 255, 255, 0.08);
-      --primary: #10b981;
-      --primary-glow: rgba(16, 185, 129, 0.25);
-      --primary-hover: #059669;
+      --primary: #4361ee;
+      --primary-glow: rgba(67, 97, 238, 0.3);
+      --primary-hover: #3b50d9;
       --accent: #06b6d4;
       --text: #f3f4f6;
       --text-muted: #9ca3af;
@@ -25,7 +25,7 @@
       --radius-sm: 8px;
       --radius-md: 14px;
       --radius-lg: 20px;
-      --transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      --transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     * {
@@ -45,7 +45,7 @@
     }
 
     header {
-      padding: 18px 36px;
+      padding: 16px 36px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -69,7 +69,7 @@
       width: 38px;
       height: 38px;
       border-radius: 10px;
-      background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+      background: linear-gradient(135deg, #4361ee 0%, #06b6d4 100%);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -98,15 +98,15 @@
       letter-spacing: 0.05em;
       padding: 3px 8px;
       border-radius: 20px;
-      background: rgba(16, 185, 129, 0.15);
-      color: #34d399;
-      border: 1px solid rgba(16, 185, 129, 0.3);
+      background: rgba(67, 97, 238, 0.15);
+      color: #818cf8;
+      border: 1px solid rgba(67, 97, 238, 0.35);
     }
 
     .header-links {
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 14px;
     }
 
     .api-link {
@@ -128,13 +128,13 @@
 
     main {
       flex: 1;
-      max-width: 1380px;
+      max-width: 1420px;
       width: 100%;
       margin: 0 auto;
-      padding: 32px 24px;
+      padding: 24px 20px;
       display: grid;
-      grid-template-columns: 460px 1fr;
-      gap: 32px;
+      grid-template-columns: 420px 1fr;
+      gap: 24px;
     }
 
     @media (max-width: 1024px) {
@@ -146,22 +146,22 @@
     .control-panel {
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 18px;
     }
 
     .card {
       background: var(--surface);
       border: 1px solid var(--surface-border);
       border-radius: var(--radius-lg);
-      padding: 24px;
+      padding: 22px;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
       backdrop-filter: blur(10px);
     }
 
     .card-title {
-      font-size: 1rem;
+      font-size: 0.98rem;
       font-weight: 700;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -170,40 +170,39 @@
     .drop-zone {
       border: 2px dashed rgba(255, 255, 255, 0.15);
       border-radius: var(--radius-md);
-      padding: 36px 20px;
+      padding: 32px 18px;
       text-align: center;
       cursor: pointer;
       transition: var(--transition);
       background: rgba(17, 24, 39, 0.5);
-      position: relative;
     }
 
     .drop-zone:hover, .drop-zone.dragover {
-      border-color: var(--primary);
-      background: rgba(16, 185, 129, 0.05);
-      box-shadow: 0 0 25px rgba(16, 185, 129, 0.15);
+      border-color: #4361ee;
+      background: rgba(67, 97, 238, 0.06);
+      box-shadow: 0 0 25px rgba(67, 97, 238, 0.2);
     }
 
     .drop-icon {
-      width: 48px;
-      height: 48px;
-      margin: 0 auto 12px;
+      width: 44px;
+      height: 44px;
+      margin: 0 auto 10px;
       border-radius: 50%;
       background: var(--surface-elevated);
       display: flex;
       align-items: center;
       justify-content: center;
-      color: var(--primary);
+      color: #6366f1;
     }
 
     .drop-text {
-      font-size: 0.95rem;
+      font-size: 0.92rem;
       font-weight: 600;
       margin-bottom: 4px;
     }
 
     .drop-hint {
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       color: var(--text-dim);
     }
 
@@ -214,47 +213,46 @@
     .samples-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin-top: 14px;
+      gap: 8px;
+      margin-top: 12px;
     }
 
     .sample-btn {
       background: var(--surface-elevated);
       border: 1px solid var(--surface-border);
       border-radius: var(--radius-sm);
-      padding: 10px;
+      padding: 9px;
       cursor: pointer;
       color: var(--text);
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       font-weight: 600;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
       transition: var(--transition);
     }
 
     .sample-btn:hover {
-      border-color: var(--primary);
+      border-color: #6366f1;
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     }
 
     .sample-tag {
-      font-size: 0.68rem;
+      font-size: 0.66rem;
       color: var(--text-muted);
     }
 
     .btn-primary {
       width: 100%;
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      background: linear-gradient(135deg, #4361ee 0%, #3b50d9 100%);
       color: #ffffff;
       border: none;
       border-radius: var(--radius-md);
-      padding: 14px 20px;
-      font-size: 0.98rem;
+      padding: 13px 18px;
+      font-size: 0.95rem;
       font-weight: 700;
-      letter-spacing: 0.01em;
       cursor: pointer;
       box-shadow: 0 4px 20px var(--primary-glow);
       transition: var(--transition);
@@ -265,7 +263,7 @@
     }
 
     .btn-primary:hover:not(:disabled) {
-      box-shadow: 0 6px 26px rgba(16, 185, 129, 0.4);
+      box-shadow: 0 6px 26px rgba(67, 97, 238, 0.45);
       transform: translateY(-1px);
     }
 
@@ -275,36 +273,16 @@
       box-shadow: none;
     }
 
-    .status-badge {
-      font-size: 0.82rem;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      border-radius: var(--radius-sm);
-      background: var(--surface-elevated);
-      border: 1px solid var(--surface-border);
-      color: var(--text-muted);
-    }
-
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #10b981;
-      box-shadow: 0 0 8px #10b981;
-    }
-
     .preview-panel {
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 16px;
     }
 
     .stats-row {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 14px;
+      gap: 12px;
     }
 
     @media (max-width: 640px) {
@@ -317,14 +295,14 @@
       background: var(--surface);
       border: 1px solid var(--surface-border);
       border-radius: var(--radius-md);
-      padding: 16px;
+      padding: 14px 16px;
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 3px;
     }
 
     .stat-label {
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       font-weight: 600;
       color: var(--text-dim);
       text-transform: uppercase;
@@ -332,37 +310,176 @@
     }
 
     .stat-value {
-      font-size: 1.85rem;
+      font-size: 1.75rem;
       font-weight: 800;
       color: var(--text);
       font-feature-settings: "tnum";
     }
 
     .stat-value.highlight {
-      color: #34d399;
-      text-shadow: 0 0 20px rgba(52, 211, 153, 0.35);
+      color: #818cf8;
+      text-shadow: 0 0 20px rgba(129, 140, 248, 0.35);
     }
 
     .stat-sub {
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       color: var(--text-muted);
+    }
+
+    /* Needs Review Alert Banner */
+    .review-banner {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 10px 16px;
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      border-radius: var(--radius-md);
+      color: #fbbf24;
+      font-size: 0.84rem;
+      transition: var(--transition);
+    }
+
+    .review-banner.active {
+      display: flex;
+    }
+
+    .review-banner-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .review-badge-action {
+      background: #f59e0b;
+      color: #0b0f19;
+      border: none;
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      font-weight: 700;
+      font-size: 0.78rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      transition: var(--transition);
+    }
+    .review-badge-action:hover {
+      background: #fbbf24;
+    }
+
+    /* Pen & Shape Drawing Toolset (Phase 1) */
+    .edit-toolbar {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 8px 14px;
+      background: var(--surface-elevated);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-md);
+    }
+
+    .edit-toolbar.active {
+      display: flex;
+    }
+
+    .toolset-group {
+      display: flex;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 3px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--surface-border);
+      gap: 2px;
+    }
+
+    .tool-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 6px 11px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: var(--transition);
+    }
+
+    .tool-btn:hover {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .tool-btn.active {
+      background: #4361ee;
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(67, 97, 238, 0.4);
+    }
+
+    .edit-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-edit-action {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--surface-border);
+      color: var(--text);
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 0.76rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: var(--transition);
+    }
+
+    .btn-edit-action:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    .btn-edit-action:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .btn-export {
+      background: linear-gradient(135deg, #4361ee 0%, #3b50d9 100%);
+      color: white;
+      border: none;
+    }
+    .btn-export:hover:not(:disabled) {
+      box-shadow: 0 2px 14px rgba(67, 97, 238, 0.4);
     }
 
     .viewer-card {
       background: var(--surface);
       border: 1px solid var(--surface-border);
       border-radius: var(--radius-lg);
-      padding: 20px;
+      padding: 18px;
       display: flex;
       flex-direction: column;
-      gap: 14px;
-      min-height: 480px;
+      gap: 12px;
+      min-height: 500px;
     }
 
     .viewer-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
     }
 
     .toggle-group {
@@ -383,17 +500,20 @@
       cursor: pointer;
       border-radius: 6px;
       transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .toggle-btn.active {
-      background: var(--primary);
+      background: #4361ee;
       color: #ffffff;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
     }
 
     .image-viewport {
       flex: 1;
-      min-height: 420px;
+      min-height: 480px;
       background: #060911;
       border-radius: var(--radius-md);
       border: 1px solid var(--surface-border);
@@ -406,10 +526,19 @@
 
     .image-viewport img {
       max-width: 100%;
-      max-height: 600px;
+      max-height: 620px;
       object-fit: contain;
       border-radius: var(--radius-sm);
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    #editor-canvas {
+      display: none;
+      max-width: 100%;
+      max-height: 620px;
+      border-radius: var(--radius-sm);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+      cursor: crosshair;
     }
 
     .placeholder-state {
@@ -428,7 +557,7 @@
 
     .spinner {
       border: 3px solid rgba(255, 255, 255, 0.1);
-      border-top: 3px solid #10b981;
+      border-top: 3px solid #6366f1;
       border-radius: 50%;
       width: 22px;
       height: 22px;
@@ -448,11 +577,36 @@
       padding: 16px;
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.78rem;
-      color: #a7f3d0;
+      color: #c7d2fe;
       max-height: 260px;
       overflow-y: auto;
       white-space: pre-wrap;
       display: none;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #4361ee;
+      color: #ffffff;
+      padding: 12px 20px;
+      border-radius: var(--radius-md);
+      font-size: 0.85rem;
+      font-weight: 600;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 1000;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
     }
 
     footer {
@@ -474,15 +628,11 @@
       <div>
         <div class="brand-title">
           Colony Detector
-          <span class="badge-chip">RF-DETR • 24 Species</span>
+          <span class="badge-chip">Universal Model • RF-DETR</span>
         </div>
       </div>
     </a>
     <div class="header-links">
-      <div class="status-badge" id="engine-status">
-        <div class="status-dot"></div>
-        <span>RF-DETR Ready</span>
-      </div>
       <a href="/docs" target="_blank" class="api-link">API Docs (Swagger)</a>
     </div>
   </header>
@@ -505,14 +655,14 @@
           <input type="file" id="file-input" accept="image/*">
         </div>
 
-        <div style="margin-top: 20px;">
+        <div style="margin-top: 18px;">
           <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 8px;">
             Or Test Instantly with Dataset Samples:
           </div>
           <div class="samples-grid">
             <button class="sample-btn" data-sample="sp01_img01.jpg">
               <span>Plate sp01</span>
-              <span class="sample-tag">Few Colonies (4)</span>
+              <span class="sample-tag">Few (4)</span>
             </button>
             <button class="sample-btn" data-sample="sp03_img07.jpg">
               <span>Plate sp03</span>
@@ -525,7 +675,7 @@
           </div>
         </div>
 
-        <div style="margin-top: 24px;">
+        <div style="margin-top: 22px;">
           <button class="btn-primary" id="analyze-btn" disabled>
             <span id="btn-text">Detect Colonies</span>
           </button>
@@ -537,10 +687,10 @@
           <span>Active Architecture</span>
         </div>
         <div style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.6;">
-          <div style="margin-bottom: 8px;">• <strong>Model</strong>: RF-DETR with DINOv2 Backbone</div>
-          <div style="margin-bottom: 8px;">• <strong>Dataset</strong>: <span style="color: #34d399;">22022540 (24 Microbial Species)</span></div>
-          <div style="margin-bottom: 8px;">• <strong>Trained Weights</strong>: <code style="color: #34d399;">models/rfdetr_tiles.pth</code> (129 MB)</div>
-          <div style="margin-bottom: 8px;">• <strong>Tuned Cutoff</strong>: <code style="color: #34d399;">conf: 0.50</code> (from detector.json)</div>
+          <div style="margin-bottom: 6px;">• <strong>Model</strong>: RF-DETR with DINOv2 Backbone</div>
+          <div style="margin-bottom: 6px;">• <strong>Dataset</strong>: <span style="color: #818cf8;">22022540 (24 Species) + AGAR</span></div>
+          <div style="margin-bottom: 6px;">• <strong>Weights</strong>: <code style="color: #818cf8;">models/rfdetr_tiles.pth</code></div>
+          <div style="margin-bottom: 6px;">• <strong>Contour Engine</strong>: <span style="color: #818cf8;">True Shape Polygon Segmentation</span></div>
           <div>• <strong>Validation Accuracy</strong>: 97.8% Precision | 96.6% F1</div>
         </div>
       </div>
@@ -548,6 +698,7 @@
 
     <!-- Right Column: Results & Interactive View -->
     <div class="preview-panel">
+      <!-- 4 Stats Cards -->
       <div class="stats-row">
         <div class="stat-card">
           <div class="stat-label">Colony Count</div>
@@ -555,9 +706,9 @@
           <div class="stat-sub" id="stat-count-sub">Awaiting image</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Detection Status</div>
-          <div class="stat-value" id="stat-status" style="font-size: 1.2rem; line-height: 2.2rem;">Ready</div>
-          <div class="stat-sub">Countable Range</div>
+          <div class="stat-label">Detection & ISO Status</div>
+          <div class="stat-value" id="stat-status" style="font-size: 1.15rem; line-height: 2.1rem;">Ready</div>
+          <div class="stat-sub" id="stat-iso-sub">ISO 7218 Lab Standard</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Inference Time</div>
@@ -571,11 +722,73 @@
         </div>
       </div>
 
+      <!-- Needs Review Banner -->
+      <div class="review-banner" id="review-banner">
+        <div class="review-banner-left">
+          <span style="font-size: 1.2rem;">⚠️</span>
+          <div>
+            <strong>Plate Flagged for Review</strong>
+            <div id="review-reasons" style="font-size: 0.78rem; color: #fde68a;">Please inspect edge colonies or faint spots.</div>
+          </div>
+        </div>
+        <button class="review-badge-action" id="btn-open-review">
+          <span>Tap-to-Fix Review</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+
+      <!-- Interactive Drawing & Review Toolbar (Phase 1) -->
+      <div class="edit-toolbar" id="edit-toolbar">
+        <div class="toolset-group">
+          <button class="tool-btn active" id="tool-select" title="Inspect / Select (Hover to view ID badge)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l7 18 3-7 7-3L3 3z"/></svg>
+            <span>Inspect</span>
+          </button>
+          <button class="tool-btn" id="tool-pen" title="Pen (Lasso Draw any shape or size like writing)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><circle cx="11" cy="11" r="2"/></svg>
+            <span>Pen (Draw)</span>
+          </button>
+          <button class="tool-btn" id="tool-circle" title="Circle (Click & drag to size any circle)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>
+            <span>Circle</span>
+          </button>
+          <button class="tool-btn" id="tool-box" title="Square / Box (Click & drag rectangle)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+            <span>Box</span>
+          </button>
+          <button class="tool-btn" id="tool-polygon" title="Polygon (Click points; double-click to finish)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 8.5 5.5 19.5 18.5 19.5 22 8.5 12 2"/></svg>
+            <span>Polygon</span>
+          </button>
+          <button class="tool-btn" id="tool-eraser" title="Eraser (Click any colony to delete)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            <span>Delete</span>
+          </button>
+        </div>
+
+        <div class="edit-actions">
+          <button class="btn-edit-action" id="btn-undo" title="Undo (Ctrl+Z)" disabled>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+            <span>Undo</span>
+          </button>
+          <button class="btn-edit-action" id="btn-reset" title="Reset to raw AI detections">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+            <span>Reset</span>
+          </button>
+          <button class="btn-edit-action btn-export" id="btn-export" title="Save verified detections to dataset">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+            <span>Export Verified Plate</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Viewer Container -->
       <div class="viewer-card">
         <div class="viewer-header">
-          <div style="font-weight: 700; font-size: 0.95rem;">Plate Inspection & Visual Detections</div>
+          <div style="font-weight: 700; font-size: 0.95rem;">Plate Inspection & Segmentation</div>
           <div class="toggle-group">
             <button class="toggle-btn active" id="tab-annotated">Annotated View</button>
+            <button class="toggle-btn" id="tab-review">Tap-to-Fix Review</button>
             <button class="toggle-btn" id="tab-raw">Original Image</button>
             <button class="toggle-btn" id="tab-json">JSON</button>
           </div>
@@ -587,6 +800,7 @@
             <p>Upload a plate image or click a sample to run detection</p>
           </div>
           <img id="annotated-img" style="display: none;" alt="Annotated agar plate">
+          <canvas id="editor-canvas"></canvas>
           <img id="raw-img" style="display: none;" alt="Original agar plate">
         </div>
 
@@ -594,6 +808,11 @@
       </div>
     </div>
   </main>
+
+  <div class="toast" id="toast">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+    <span id="toast-msg">Verified plate saved to dataset!</span>
+  </div>
 
   <footer>
     Colony Detector Service • PyTorch & RF-DETR Automated Microbial Counting Engine
@@ -607,20 +826,75 @@
     const placeholder = document.getElementById('placeholder');
     const annotatedImg = document.getElementById('annotated-img');
     const rawImg = document.getElementById('raw-img');
+    const editorCanvas = document.getElementById('editor-canvas');
     const jsonPanel = document.getElementById('json-panel');
 
     const statCount = document.getElementById('stat-count');
     const statCountSub = document.getElementById('stat-count-sub');
     const statStatus = document.getElementById('stat-status');
+    const statIsoSub = document.getElementById('stat-iso-sub');
     const statTime = document.getElementById('stat-time');
     const statConf = document.getElementById('stat-conf');
 
     const tabAnnotated = document.getElementById('tab-annotated');
+    const tabReview = document.getElementById('tab-review');
     const tabRaw = document.getElementById('tab-raw');
     const tabJson = document.getElementById('tab-json');
 
+    const reviewBanner = document.getElementById('review-banner');
+    const reviewReasons = document.getElementById('review-reasons');
+    const btnOpenReview = document.getElementById('btn-open-review');
+    const editToolbar = document.getElementById('edit-toolbar');
+
+    const toolSelect = document.getElementById('tool-select');
+    const toolPen = document.getElementById('tool-pen');
+    const toolCircle = document.getElementById('tool-circle');
+    const toolBox = document.getElementById('tool-box');
+    const toolPolygon = document.getElementById('tool-polygon');
+    const toolEraser = document.getElementById('tool-eraser');
+
+    const btnUndo = document.getElementById('btn-undo');
+    const btnReset = document.getElementById('btn-reset');
+    const btnExport = document.getElementById('btn-export');
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toast-msg');
+
     let currentFile = null;
     let latestResult = null;
+    let rawImageObj = new Image();
+    let originalColonies = [];
+    let colonies = [];
+    let undoHistory = [];
+    let hoveredColonyIndex = -1;
+    let selectedColonyIndex = -1;
+    let activeTab = 'annotated';
+    let currentTool = 'select'; // 'select' | 'pen' | 'circle' | 'box' | 'polygon' | 'eraser'
+
+    // Drawing interaction state
+    let isMouseDown = false;
+    let dragStart = null;
+    let currentDrag = null;
+    let penPoints = [];
+    let polygonVertices = [];
+
+    // Tool switching
+    const tools = [
+      { id: 'select', el: toolSelect },
+      { id: 'pen', el: toolPen },
+      { id: 'circle', el: toolCircle },
+      { id: 'box', el: toolBox },
+      { id: 'polygon', el: toolPolygon },
+      { id: 'eraser', el: toolEraser }
+    ];
+
+    tools.forEach(t => {
+      t.el.addEventListener('click', () => {
+        tools.forEach(o => o.el.classList.toggle('active', o.id === t.id));
+        currentTool = t.id;
+        polygonVertices = [];
+        renderCanvas();
+      });
+    });
 
     dropZone.addEventListener('click', () => fileInput.click());
     dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
@@ -643,16 +917,25 @@
       const reader = new FileReader();
       reader.onload = (e) => {
         rawImg.src = e.target.result;
+        rawImageObj = new Image();
+        rawImageObj.onload = () => {
+          editorCanvas.width = rawImageObj.naturalWidth;
+          editorCanvas.height = rawImageObj.naturalHeight;
+        };
+        rawImageObj.src = e.target.result;
         rawImg.style.display = 'block';
         annotatedImg.style.display = 'none';
+        editorCanvas.style.display = 'none';
         placeholder.style.display = 'none';
         jsonPanel.style.display = 'none';
+        reviewBanner.classList.remove('active');
+        editToolbar.classList.remove('active');
         setActiveTab('raw');
       };
       reader.readAsDataURL(file);
     }
 
-    // AGAR sample quick buttons
+    // Quick test samples
     document.querySelectorAll('.sample-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         const sampleName = btn.getAttribute('data-sample');
@@ -666,7 +949,6 @@
           handleFile(file);
           btnText.textContent = 'Detect Colonies';
           analyzeBtn.disabled = false;
-          // Auto-trigger analyze for immediate wow effect
           runInference();
         } catch (err) {
           alert('Failed to load sample: ' + err.message);
@@ -702,22 +984,45 @@
         const duration = Math.round(performance.now() - t0);
         latestResult = data;
 
-        // Populate Stats
-        const count = data.total_count !== undefined ? data.total_count : (data.colony_count !== undefined ? data.colony_count : (data.boxes ? data.boxes.length : 0));
-        statCount.textContent = count;
-        statCountSub.textContent = count === 1 ? '1 Colony Detected' : `${count} Colonies Detected`;
-        statStatus.textContent = data.tntc ? 'TNTC' : (data.confidence && data.confidence.needs_review ? 'Needs Review' : 'Verified');
-        statStatus.style.color = data.tntc ? 'var(--danger)' : ((data.confidence && data.confidence.needs_review) ? 'var(--warning)' : '#34d399');
+        // Parse colony detections into editable list with exact contours
+        originalColonies = (data.boxes || []).map((b, idx) => ({
+          id: idx + 1,
+          centroid: [b.centroid[0], b.centroid[1]],
+          radius_px: b.radius_px || 10,
+          xyxy: b.xyxy || [b.centroid[0] - 10, b.centroid[1] - 10, b.centroid[0] + 10, b.centroid[1] + 10],
+          confidence: b.confidence !== undefined ? b.confidence : 1.0,
+          source: 'ai',
+          contour: b.contour || null
+        }));
+        colonies = JSON.parse(JSON.stringify(originalColonies));
+        undoHistory = [];
+        updateUndoButton();
+        updateCountDisplay();
+
         statTime.textContent = `${(duration / 1000).toFixed(1)}s`;
         statConf.textContent = '0.50';
+
+        // Check if Needs Review
+        const needsReview = data.tntc || (data.confidence && data.confidence.needs_review);
+        if (data.tntc) {
+          statStatus.textContent = 'TNTC';
+          statStatus.style.color = 'var(--danger)';
+          reviewReasons.textContent = 'Too Numerous To Count (> 300 colonies). Manual verification suggested.';
+          reviewBanner.classList.add('active');
+        } else if (needsReview) {
+          statStatus.textContent = 'Needs Review';
+          statStatus.style.color = 'var(--warning)';
+          reviewReasons.textContent = 'Flagged for review. Please inspect faint spots or edge colonies.';
+          reviewBanner.classList.add('active');
+        } else {
+          statStatus.textContent = 'Verified';
+          statStatus.style.color = '#818cf8';
+          reviewBanner.classList.remove('active');
+        }
 
         // Display annotated image
         if (data.annotated_image) {
           annotatedImg.src = 'data:image/png;base64,' + data.annotated_image;
-          annotatedImg.style.display = 'block';
-          rawImg.style.display = 'none';
-          placeholder.style.display = 'none';
-          jsonPanel.style.display = 'none';
           setActiveTab('annotated');
         }
 
@@ -730,23 +1035,471 @@
       }
     }
 
+    function updateCountDisplay() {
+      const count = colonies.length;
+      statCount.textContent = count;
+      statCountSub.textContent = count === 1 ? '1 Colony Detected' : `${count} Colonies Detected`;
+      if (statIsoSub) {
+        statIsoSub.textContent = count <= 30 ? 'ISO 7218: Target ±3 CFU' : 'ISO 7218: Target ±10%';
+      }
+    }
+
+    function updateUndoButton() {
+      btnUndo.disabled = undoHistory.length === 0;
+    }
+
+    // Convert mouse event coordinates to canvas image coordinate system
+    function getCanvasCoordinates(e) {
+      const rect = editorCanvas.getBoundingClientRect();
+      const scaleX = editorCanvas.width / rect.width;
+      const scaleY = editorCanvas.height / rect.height;
+      return [
+        (e.clientX - rect.left) * scaleX,
+        (e.clientY - rect.top) * scaleY
+      ];
+    }
+
+    function hitTestColony(x, y) {
+      for (let i = colonies.length - 1; i >= 0; i--) {
+        const c = colonies[i];
+        if (c.contour && c.contour.length >= 3) {
+          // Polygon point test
+          let inside = false;
+          for (let j = 0, k = c.contour.length - 1; j < c.contour.length; k = j++) {
+            const xi = c.contour[j][0], yi = c.contour[j][1];
+            const xk = c.contour[k][0], yk = c.contour[k][1];
+            const intersect = ((yi > y) !== (yk > y)) && (x < (xk - xi) * (y - yi) / (yk - yi) + xi);
+            if (intersect) inside = !inside;
+          }
+          if (inside) return i;
+        }
+        // Centroid distance fallback
+        const [cx, cy] = c.centroid;
+        const hitRadius = Math.max(c.radius_px * 1.3, 14);
+        if (Math.hypot(x - cx, y - cy) <= hitRadius) {
+          return i;
+        }
+      }
+      return -1;
+    }
+
+    function computeBoundingBox(pts) {
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      for (let p of pts) {
+        if (p[0] < minX) minX = p[0];
+        if (p[1] < minY) minY = p[1];
+        if (p[0] > maxX) maxX = p[0];
+        if (p[1] > maxY) maxY = p[1];
+      }
+      return [minX, minY, maxX, maxY];
+    }
+
+    // Canvas Rendering (Vibrant Royal Blue matching screenshot)
+    function renderCanvas() {
+      const ctx = editorCanvas.getContext('2d');
+      ctx.clearRect(0, 0, editorCanvas.width, editorCanvas.height);
+
+      if (rawImageObj && rawImageObj.complete && rawImageObj.naturalWidth) {
+        ctx.drawImage(rawImageObj, 0, 0, editorCanvas.width, editorCanvas.height);
+      }
+
+      // Compute display scaling ratio so lines are solid and clearly visible on high-res photos
+      const rect = editorCanvas.getBoundingClientRect();
+      const displayRatio = (editorCanvas.width && rect.width) ? (editorCanvas.width / rect.width) : 1;
+      const normalLineWidth = Math.max(2, 1.8 * displayRatio);
+      const hoverLineWidth = Math.max(3, 2.8 * displayRatio);
+
+      // Draw all colonies with royal blue outlines (#4361ee / rgb(67, 97, 238))
+      for (let i = 0; i < colonies.length; i++) {
+        const c = colonies[i];
+        const [cx, cy] = c.centroid;
+        const isHovered = (i === hoveredColonyIndex);
+        const isSelected = (i === selectedColonyIndex);
+        const hasContour = c.contour && c.contour.length >= 3;
+
+        ctx.beginPath();
+        if (hasContour) {
+          ctx.moveTo(c.contour[0][0], c.contour[0][1]);
+          for (let p = 1; p < c.contour.length; p++) {
+            ctx.lineTo(c.contour[p][0], c.contour[p][1]);
+          }
+          ctx.closePath();
+        } else {
+          ctx.arc(cx, cy, Math.max(c.radius_px, 6), 0, Math.PI * 2);
+        }
+
+        // Royal blue contour stroke with clear visible thickness
+        ctx.strokeStyle = isHovered && currentTool === 'eraser' ? '#ef4444' : '#4361ee';
+        ctx.lineWidth = isHovered || isSelected ? hoverLineWidth : normalLineWidth;
+        ctx.stroke();
+
+        // Subtle fill for manual additions
+        if (c.source === 'manual') {
+          ctx.fillStyle = 'rgba(67, 97, 238, 0.14)';
+          ctx.fill();
+        }
+
+        // Render Screenshot-style Bounding Box & "ID XX" Badge when selected or hovered
+        if ((isHovered || isSelected) && currentTool === 'select') {
+          const [bx0, by0, bx1, by1] = c.xyxy || [cx - c.radius_px, cy - c.radius_px, cx + c.radius_px, cy + c.radius_px];
+          const pad = 4 * displayRatio;
+          const boxX = bx0 - pad;
+          const boxY = by0 - pad;
+          const boxW = (bx1 - bx0) + pad * 2;
+          const boxH = (by1 - by0) + pad * 2;
+
+          // Blue selection rectangle (matches screenshot)
+          ctx.strokeStyle = '#4361ee';
+          ctx.lineWidth = Math.max(2, 2.2 * displayRatio);
+          ctx.strokeRect(boxX, boxY, boxW, boxH);
+
+          // "ID 24" Badge pill above the bounding box (matches screenshot)
+          const badgeText = `ID ${c.id || (i + 1)}`;
+          const fontSize = Math.round(13 * displayRatio);
+          ctx.font = `bold ${fontSize}px "Plus Jakarta Sans", sans-serif`;
+          const textMetrics = ctx.measureText(badgeText);
+          const badgeW = textMetrics.width + (16 * displayRatio);
+          const badgeH = 22 * displayRatio;
+          const badgeX = boxX;
+          const badgeY = boxY - badgeH - (3 * displayRatio);
+
+          // Pill background
+          ctx.fillStyle = '#4361ee';
+          ctx.beginPath();
+          ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 6 * displayRatio);
+          ctx.fill();
+
+          // Pill text
+          ctx.fillStyle = '#ffffff';
+          ctx.fillText(badgeText, badgeX + (8 * displayRatio), badgeY + (16 * displayRatio));
+        }
+      }
+
+      // Live Drawing Previews
+      if (isMouseDown && dragStart && currentDrag) {
+        const [x0, y0] = dragStart;
+        const [x1, y1] = currentDrag;
+
+        if (currentTool === 'pen' && penPoints.length > 1) {
+          // Freehand Pen Trail
+          ctx.beginPath();
+          ctx.moveTo(penPoints[0][0], penPoints[0][1]);
+          for (let p of penPoints) ctx.lineTo(p[0], p[1]);
+          ctx.strokeStyle = '#4361ee';
+          ctx.lineWidth = normalLineWidth;
+          ctx.stroke();
+        } else if (currentTool === 'circle') {
+          // Drag-to-size Circle
+          const radius = Math.hypot(x1 - x0, y1 - y0);
+          ctx.beginPath();
+          ctx.arc(x0, y0, radius, 0, Math.PI * 2);
+          ctx.strokeStyle = '#4361ee';
+          ctx.lineWidth = normalLineWidth;
+          ctx.setLineDash([5 * displayRatio, 5 * displayRatio]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        } else if (currentTool === 'box') {
+          // Drag-to-size Box
+          ctx.strokeStyle = '#4361ee';
+          ctx.lineWidth = normalLineWidth;
+          ctx.setLineDash([5 * displayRatio, 5 * displayRatio]);
+          ctx.strokeRect(Math.min(x0, x1), Math.min(y0, y1), Math.abs(x1 - x0), Math.abs(y1 - y0));
+          ctx.setLineDash([]);
+        }
+      }
+
+      // Polygon Vertices Live Preview
+      if (currentTool === 'polygon' && polygonVertices.length > 0) {
+        ctx.beginPath();
+        ctx.moveTo(polygonVertices[0][0], polygonVertices[0][1]);
+        for (let p of polygonVertices) ctx.lineTo(p[0], p[1]);
+        if (currentDrag) ctx.lineTo(currentDrag[0], currentDrag[1]);
+        ctx.strokeStyle = '#4361ee';
+        ctx.lineWidth = normalLineWidth;
+        ctx.setLineDash([4 * displayRatio, 4 * displayRatio]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Small handles on vertices
+        for (let p of polygonVertices) {
+          ctx.beginPath();
+          ctx.arc(p[0], p[1], 4 * displayRatio, 0, Math.PI * 2);
+          ctx.fillStyle = '#4361ee';
+          ctx.fill();
+        }
+      }
+    }
+
+
+    // Canvas Mouse Event Handlers
+    editorCanvas.addEventListener('mousedown', (e) => {
+      const [x, y] = getCanvasCoordinates(e);
+      isMouseDown = true;
+      dragStart = [x, y];
+      currentDrag = [x, y];
+
+      if (currentTool === 'pen') {
+        penPoints = [[x, y]];
+      } else if (currentTool === 'polygon') {
+        polygonVertices.push([x, y]);
+        renderCanvas();
+      } else if (currentTool === 'eraser') {
+        const hit = hitTestColony(x, y);
+        if (hit !== -1) {
+          const removed = colonies.splice(hit, 1)[0];
+          undoHistory.push({ action: 'remove', colony: removed, index: hit });
+          updateUndoButton();
+          updateCountDisplay();
+          renderCanvas();
+        }
+      } else if (currentTool === 'select') {
+        selectedColonyIndex = hitTestColony(x, y);
+        renderCanvas();
+      }
+    });
+
+    editorCanvas.addEventListener('mousemove', (e) => {
+      const [x, y] = getCanvasCoordinates(e);
+      currentDrag = [x, y];
+
+      if (currentTool === 'select' || currentTool === 'eraser') {
+        const prev = hoveredColonyIndex;
+        hoveredColonyIndex = hitTestColony(x, y);
+        if (hoveredColonyIndex !== prev) {
+          editorCanvas.style.cursor = hoveredColonyIndex !== -1 ? 'pointer' : 'crosshair';
+          renderCanvas();
+        }
+      } else if (isMouseDown) {
+        if (currentTool === 'pen') {
+          penPoints.push([x, y]);
+          renderCanvas();
+        } else if (currentTool === 'circle' || currentTool === 'box') {
+          renderCanvas();
+        }
+      }
+    });
+
+    editorCanvas.addEventListener('mouseup', (e) => {
+      if (!isMouseDown) return;
+      isMouseDown = false;
+      const [x, y] = getCanvasCoordinates(e);
+
+      if (currentTool === 'pen' && penPoints.length > 5) {
+        // Freehand pen drawing completed: create colony with custom polygon!
+        penPoints.push(penPoints[0]); // close loop
+        const [bx0, by0, bx1, by1] = computeBoundingBox(penPoints);
+        const cx = (bx0 + bx1) / 2;
+        const cy = (by0 + by1) / 2;
+        const radius = Math.max((bx1 - bx0) + (by1 - by0)) / 4;
+
+        const newColony = {
+          id: colonies.length + 1,
+          centroid: [Math.round(cx), Math.round(cy)],
+          radius_px: Math.max(8, Math.round(radius)),
+          xyxy: [Math.round(bx0), Math.round(by0), Math.round(bx1), Math.round(by1)],
+          confidence: 1.0,
+          source: 'manual',
+          contour: penPoints
+        };
+        colonies.push(newColony);
+        undoHistory.push({ action: 'add', colony: newColony, index: colonies.length - 1 });
+        updateUndoButton();
+        updateCountDisplay();
+        penPoints = [];
+        renderCanvas();
+      } else if (currentTool === 'circle' && dragStart) {
+        // Drag circle completed
+        const [x0, y0] = dragStart;
+        const radius = Math.hypot(x - x0, y - y0);
+        if (radius > 4) {
+          // Approximate smooth circle polygon (32 points)
+          const pts = [];
+          for (let i = 0; i < 32; i++) {
+            const angle = (i / 32) * Math.PI * 2;
+            pts.push([x0 + radius * Math.cos(angle), y0 + radius * Math.sin(angle)]);
+          }
+          const newColony = {
+            id: colonies.length + 1,
+            centroid: [Math.round(x0), Math.round(y0)],
+            radius_px: Math.round(radius),
+            xyxy: [Math.round(x0 - radius), Math.round(y0 - radius), Math.round(x0 + radius), Math.round(y0 + radius)],
+            confidence: 1.0,
+            source: 'manual',
+            contour: pts
+          };
+          colonies.push(newColony);
+          undoHistory.push({ action: 'add', colony: newColony, index: colonies.length - 1 });
+          updateUndoButton();
+          updateCountDisplay();
+          renderCanvas();
+        }
+      } else if (currentTool === 'box' && dragStart) {
+        // Drag box completed
+        const [x0, y0] = dragStart;
+        const minX = Math.min(x0, x), maxX = Math.max(x0, x);
+        const minY = Math.min(y0, y), maxY = Math.max(y0, y);
+        if (maxX - minX > 5 && maxY - minY > 5) {
+          const pts = [
+            [minX, minY], [maxX, minY], [maxX, maxY], [minX, maxY], [minX, minY]
+          ];
+          const newColony = {
+            id: colonies.length + 1,
+            centroid: [Math.round((minX + maxX) / 2), Math.round((minY + maxY) / 2)],
+            radius_px: Math.round(((maxX - minX) + (maxY - minY)) / 4),
+            xyxy: [Math.round(minX), Math.round(minY), Math.round(maxX), Math.round(maxY)],
+            confidence: 1.0,
+            source: 'manual',
+            contour: pts
+          };
+          colonies.push(newColony);
+          undoHistory.push({ action: 'add', colony: newColony, index: colonies.length - 1 });
+          updateUndoButton();
+          updateCountDisplay();
+          renderCanvas();
+        }
+      }
+    });
+
+    // Double-click to finish Polygon tool
+    editorCanvas.addEventListener('dblclick', () => {
+      if (currentTool === 'polygon' && polygonVertices.length >= 3) {
+        polygonVertices.push(polygonVertices[0]); // close
+        const [bx0, by0, bx1, by1] = computeBoundingBox(polygonVertices);
+        const cx = (bx0 + bx1) / 2;
+        const cy = (by0 + by1) / 2;
+        const radius = Math.max((bx1 - bx0) + (by1 - by0)) / 4;
+
+        const newColony = {
+          id: colonies.length + 1,
+          centroid: [Math.round(cx), Math.round(cy)],
+          radius_px: Math.max(8, Math.round(radius)),
+          xyxy: [Math.round(bx0), Math.round(by0), Math.round(bx1), Math.round(by1)],
+          confidence: 1.0,
+          source: 'manual',
+          contour: polygonVertices
+        };
+        colonies.push(newColony);
+        undoHistory.push({ action: 'add', colony: newColony, index: colonies.length - 1 });
+        updateUndoButton();
+        updateCountDisplay();
+        polygonVertices = [];
+        renderCanvas();
+      }
+    });
+
+    // Undo
+    btnUndo.addEventListener('click', () => {
+      if (undoHistory.length === 0) return;
+      const item = undoHistory.pop();
+      if (item.action === 'remove') {
+        colonies.splice(item.index, 0, item.colony);
+      } else if (item.action === 'add') {
+        const idx = colonies.indexOf(item.colony);
+        if (idx >= 0) colonies.splice(idx, 1);
+      }
+      updateUndoButton();
+      updateCountDisplay();
+      renderCanvas();
+    });
+
+    // Reset back to AI
+    btnReset.addEventListener('click', () => {
+      colonies = JSON.parse(JSON.stringify(originalColonies));
+      undoHistory = [];
+      updateUndoButton();
+      updateCountDisplay();
+      renderCanvas();
+      showToast('Restored original AI detections');
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        btnUndo.click();
+      }
+    });
+
+    // Export Verified Plate
+    btnExport.addEventListener('click', async () => {
+      const imageName = currentFile ? currentFile.name : 'plate_verified.jpg';
+      const payload = {
+        image: imageName,
+        count: colonies.length,
+        boxes: colonies.map(c => ({
+          centroid: c.centroid,
+          radius_px: c.radius_px,
+          confidence: c.confidence,
+          source: c.source,
+          contour: c.contour
+        })),
+        iso_pass_standard: colonies.length <= 30 ? "±3 CFU" : "±10%",
+        verified_at: new Date().toISOString()
+      };
+
+      try {
+        await fetch('/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      } catch (err) {
+        console.warn('Backend save:', err);
+      }
+
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${imageName.replace(/\.[^/.]+$/, "")}_verified.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      showToast(`Saved & downloaded ${colonies.length} verified colonies!`);
+    });
+
+    function showToast(msg) {
+      toastMsg.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3500);
+    }
+
+    btnOpenReview.addEventListener('click', () => {
+      setActiveTab('review');
+    });
+
     function setActiveTab(tab) {
+      activeTab = tab;
       tabAnnotated.classList.toggle('active', tab === 'annotated');
+      tabReview.classList.toggle('active', tab === 'review');
       tabRaw.classList.toggle('active', tab === 'raw');
       tabJson.classList.toggle('active', tab === 'json');
 
+      editToolbar.classList.toggle('active', tab === 'review');
+
       if (tab === 'annotated') {
         annotatedImg.style.display = annotatedImg.src ? 'block' : 'none';
+        editorCanvas.style.display = 'none';
         rawImg.style.display = 'none';
         jsonPanel.style.display = 'none';
         placeholder.style.display = annotatedImg.src ? 'none' : 'flex';
+      } else if (tab === 'review') {
+        annotatedImg.style.display = 'none';
+        editorCanvas.style.display = 'block';
+        rawImg.style.display = 'none';
+        jsonPanel.style.display = 'none';
+        placeholder.style.display = 'none';
+        renderCanvas();
       } else if (tab === 'raw') {
         annotatedImg.style.display = 'none';
+        editorCanvas.style.display = 'none';
         rawImg.style.display = rawImg.src ? 'block' : 'none';
         jsonPanel.style.display = 'none';
         placeholder.style.display = rawImg.src ? 'none' : 'flex';
       } else if (tab === 'json') {
         annotatedImg.style.display = 'none';
+        editorCanvas.style.display = 'none';
         rawImg.style.display = 'none';
         placeholder.style.display = 'none';
         jsonPanel.style.display = 'block';
@@ -754,6 +1507,7 @@
     }
 
     tabAnnotated.addEventListener('click', () => setActiveTab('annotated'));
+    tabReview.addEventListener('click', () => setActiveTab('review'));
     tabRaw.addEventListener('click', () => setActiveTab('raw'));
     tabJson.addEventListener('click', () => setActiveTab('json'));
   </script>

@@ -42,6 +42,91 @@ def make_tiles(w: int, h: int, tile: int, overlap: float) -> list[tuple[int, int
     return [(x, y, min(x + tile, w), min(y + tile, h)) for y in starts(h) for x in starts(w)]
 
 
+def smooth_polygon(pts: np.ndarray, iterations: int = 1) -> np.ndarray:
+    """Chaikin's corner cutting algorithm for organic, smooth colony contours."""
+    for _ in range(iterations):
+        n = len(pts)
+        if n < 4:
+            break
+        new_pts = []
+        for i in range(n):
+            p0 = pts[i]
+            p1 = pts[(i + 1) % n]
+            new_pts.append(0.75 * p0 + 0.25 * p1)
+            new_pts.append(0.25 * p0 + 0.75 * p1)
+        pts = np.array(new_pts, dtype=np.float32)
+    return pts
+
+
+def extract_colony_contour(bgr: np.ndarray, bx0: float, by0: float, bx1: float, by1: float, cx: float, cy: float) -> np.ndarray:
+    """Extract precise polygon outline for a detected colony (Phase 2 instance contours)."""
+    h, w = bgr.shape[:2]
+    bw, bh = bx1 - bx0, by1 - by0
+    margin = int(max(10, 0.40 * max(bw, bh)))
+    x0, y0 = max(0, int(bx0 - margin)), max(0, int(by0 - margin))
+    x1, y1 = min(w, int(bx1 + margin)), min(h, int(by1 + margin))
+    patch = bgr[y0:y1, x0:x1]
+    if patch.size == 0 or patch.shape[0] < 4 or patch.shape[1] < 4:
+        t = np.linspace(0, 2 * np.pi, 36, endpoint=False)
+        rx, ry = max(3.0, bw / 2.0), max(3.0, bh / 2.0)
+        return np.stack([cx + rx * np.cos(t), cy + ry * np.sin(t)], axis=1)
+
+    pcx, pcy = int(cx - x0), int(cy - y0)
+    best = None
+
+    # 1. Try Lab color contrast against local background
+    lab = cv2.cvtColor(patch, cv2.COLOR_BGR2Lab)
+    border = np.concatenate([lab[0, :], lab[-1, :], lab[:, 0], lab[:, -1]], axis=0)
+    bg = np.median(border, axis=0)
+    dist = np.linalg.norm(lab.astype(np.float32) - bg, axis=2)
+    norm = cv2.normalize(dist, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+    blurred = cv2.GaussianBlur(norm, (5, 5), 0)
+    _, thresh = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    for cnt in contours:
+        if cv2.pointPolygonTest(cnt, (float(pcx), float(pcy)), True) >= -8:
+            if cv2.contourArea(cnt) >= 0.12 * (bw * bh):
+                best = cnt
+                break
+
+    # 2. If not found, try grayscale Otsu
+    if best is None:
+        gray = cv2.cvtColor(patch, cv2.COLOR_BGR2GRAY)
+        blurred_g = cv2.GaussianBlur(gray, (5, 5), 0)
+        _, thresh_g = cv2.threshold(blurred_g, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        if 0 <= pcx < patch.shape[1] and 0 <= pcy < patch.shape[0]:
+            if thresh_g[pcy, pcx] == 0:
+                thresh_g = cv2.bitwise_not(thresh_g)
+        contours_g, _ = cv2.findContours(thresh_g, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        for cnt in contours_g:
+            if cv2.pointPolygonTest(cnt, (float(pcx), float(pcy)), True) >= -8:
+                if cv2.contourArea(cnt) >= 0.15 * (bw * bh):
+                    best = cnt
+                    break
+
+    if best is not None:
+        pts_in_patch = best.reshape(-1, 2)
+        # Check if contour touches patch boundary (which would create a straight box line)
+        touches = (
+            np.any(pts_in_patch[:, 0] <= 1) or np.any(pts_in_patch[:, 0] >= patch.shape[1] - 2) or
+            np.any(pts_in_patch[:, 1] <= 1) or np.any(pts_in_patch[:, 1] >= patch.shape[0] - 2)
+        )
+        if not touches:
+            simplified = cv2.approxPolyDP(best, max(0.8, 0.005 * cv2.arcLength(best, True)), True)
+            if len(simplified) >= 4:
+                pts = simplified.reshape(-1, 2).astype(float)
+                pts[:, 0] += x0
+                pts[:, 1] += y0
+                return smooth_polygon(pts, iterations=1)
+
+    # 3. Fallback: smooth fitted ellipse polygon (NEVER a box)
+    t = np.linspace(0, 2 * np.pi, 36, endpoint=False)
+    rx, ry = max(3.0, bw / 2.0), max(3.0, bh / 2.0)
+    return np.stack([cx + rx * np.cos(t), cy + ry * np.sin(t)], axis=1)
+
+
+
+
 def merge_boxes(boxes: list[RawBox], iou_thr: float = 0.5, ios_thr: float = 0.75) -> list[RawBox]:
     """Greedy NMS that also removes a box mostly contained in a better one
     (intersection over the smaller box), which is what tile seams produce."""
@@ -153,9 +238,11 @@ class TiledBoxEngine(Engine):
             cx, cy = (bx0 + bx1) / 2 + x0, (by0 + by1) / 2 + y0
             if math.hypot(cx - rc[0], cy - rc[1]) > roi_r:
                 continue
+            cnt = extract_colony_contour(bgr, bx0 + x0, by0 + y0, bx1 + x0, by1 + y0, cx, cy)
             dets.append(Detection(
                 cx=cx, cy=cy, radius=((bx1 - bx0) + (by1 - by0)) / 4.0, confidence=float(c),
-                class_name=cls, source=self.name, shape_source="box",
+                class_name=cls, source=self.name, shape_source="contour" if cnt is not None else "box",
+                contour=cnt,
             ))
         if floor < self.conf and sum(d.confidence >= self.conf for d in dets) < self.dense_min:
             dets = [d for d in dets if d.confidence >= self.conf]

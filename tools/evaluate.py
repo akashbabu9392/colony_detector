@@ -87,9 +87,11 @@ def run(counter: ColonyCounter, cases: list[dict]) -> tuple[list[dict], dict]:
             case = {**case, "count": gt["count"], "points": gt["colonies"]}
         else:
             img = read_image(case["path"])
-        res = counter.count(img)
-        row = {"image": case["name"], "true": case["count"], "pred": res.total,
-               "error": res.total - case["count"], "tntc": res.tntc,
+        err = res.total - case["count"]
+        true_cnt = case["count"]
+        iso_ok = (abs(err) <= 3) if true_cnt <= 30 else (abs(err) <= 0.10 * max(true_cnt, 1))
+        row = {"image": case["name"], "true": true_cnt, "pred": res.total,
+               "error": err, "iso_pass": iso_ok, "tntc": res.tntc,
                "needs_review": res.confidence["needs_review"], "ms": res.inference_ms}
         if case.get("points") is not None:
             has_points = True
@@ -100,7 +102,7 @@ def run(counter: ColonyCounter, cases: list[dict]) -> tuple[list[dict], dict]:
         rows.append(row)
         tc.append(case["count"])
         pc.append(res.total)
-        print(f"{row['image']}: true={row['true']} pred={row['pred']} err={row['error']:+d}")
+        print(f"{row['image']}: true={row['true']} pred={row['pred']} err={row['error']:+d} [ISO: {'PASS' if iso_ok else 'FAIL'}]")
     summary = count_metrics(tc, pc)
     if has_points:
         summary["detection"] = detection_metrics(tp, fp, fn)

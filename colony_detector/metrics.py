@@ -50,6 +50,11 @@ def count_metrics(true_counts: list[int], pred_counts: list[int]) -> dict:
         return {}
     err = p - t
     ape = np.abs(err) / np.maximum(t, 1.0)
+    # ISO Lab Standard rule:
+    # If true <= 30 colonies: accept within +- 3 colonies
+    # If true > 30 colonies:  accept within +- 10%
+    iso_pass = np.where(t <= 30, np.abs(err) <= 3, ape <= 0.10)
+    iso_rate = float(np.mean(iso_pass))
     return {
         "n_plates": int(len(t)),
         "mae": round(float(np.mean(np.abs(err))), 3),
@@ -59,6 +64,9 @@ def count_metrics(true_counts: list[int], pred_counts: list[int]) -> dict:
         "within_5pct": round(float(np.mean(ape <= 0.05)), 3),
         "within_10pct": round(float(np.mean(ape <= 0.10)), 3),
         "exact": round(float(np.mean(err == 0)), 3),
+        "iso_pass_rate": round(iso_rate, 3),
+        "iso_pass_pct": round(iso_rate * 100.0, 1),
+        "iso_passed": int(np.sum(iso_pass)),
     }
 
 

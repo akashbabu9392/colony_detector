@@ -16,8 +16,9 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 import numpy as np
-from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadFile
+from fastapi import Body, Depends, FastAPI, File, Form, Header, HTTPException, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse
+import json
 
 from colony_detector import __version__
 from colony_detector.config import Settings
@@ -135,4 +136,20 @@ def get_sample(filename: str):
         if c.is_file():
             return FileResponse(c, media_type="image/jpeg")
     raise HTTPException(status_code=404, detail="sample image not found")
+ 
+ 
+@app.post("/verify", dependencies=[Depends(_auth)])
+async def verify_plate(payload: dict = Body(...)) -> dict:
+    image_name = payload.get("image", "unknown_plate.jpg")
+    safe_name = Path(image_name).stem
+    out_dir = Path(__file__).parent.parent / "data" / "verified"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_file = out_dir / f"{safe_name}.json"
+    with open(out_file, "w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2)
+    return {
+        "status": "ok",
+        "saved_to": str(out_file),
+        "count": payload.get("count", 0),
+    }
 

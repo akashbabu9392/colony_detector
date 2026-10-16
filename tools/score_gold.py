@@ -74,7 +74,9 @@ def score_plate(g: dict, pred: np.ndarray, min_mm: float, review_mm: float) -> d
     fn = len(gold) - tp
     n, lo, hi = len(counted), g["count"], g["count"] + len(g["unsure"])
     err = 0 if lo <= n <= hi else (n - hi if n > hi else n - lo)
+    iso_pass = bool(abs(err) <= 3) if lo <= 30 else bool(abs(err) <= 0.10 * max(lo, 1))
     return {"image": g["image"], "gold": lo, "unsure": hi - lo, "pred": n, "error": err,
+            "iso_pass": iso_pass,
             "tp": tp, "fp": fp, "fn": fn, "pred_specks": specks, "gold_specks": len(g["small_specks"]),
             "flag": g.get("plate_flag") or ""}
 
@@ -83,6 +85,7 @@ def summarise(rows: list[dict]) -> dict:
     if not rows:
         return {}
     err = np.array([r["error"] for r in rows])
+    iso = np.array([r.get("iso_pass", False) for r in rows], bool)
     tp, fp, fn = (sum(r[k] for r in rows) for k in ("tp", "fp", "fn"))
     p = tp / max(tp + fp, 1)
     rc = tp / max(tp + fn, 1)
@@ -91,6 +94,7 @@ def summarise(rows: list[dict]) -> dict:
         "exact": round(float((err == 0).mean()), 3),
         "within_1": round(float((np.abs(err) <= 1).mean()), 3),
         "within_2": round(float((np.abs(err) <= 2).mean()), 3),
+        "iso_pass": round(float(iso.mean()), 3),
         "mae": round(float(np.abs(err).mean()), 3),
         "bias": round(float(err.mean()), 3),
         "precision": round(p, 4), "recall": round(rc, 4), "f1": round(2 * p * rc / max(p + rc, 1e-9), 4),
@@ -124,10 +128,8 @@ def tune(gold: list[dict], cache_path: str, min_mm: float, review_mm: float) -> 
         return summarise([score_plate(g, _cut(dets[g["image"]], c, dc, dm), min_mm, review_mm) for g in subset])
 
     def key(sm):
-        # Plate-level exactness alone favours sparse plates (most plates hold
-        # 0-3 colonies) and would starve crowded ones; balance it with +-1
-        # agreement and colony-level F1.
-        return (sm["exact"] + sm["within_1"] + sm["f1"], -sm["mae"])
+        # Balance ISO lab pass rate with exact/within_1 agreement and colony-level F1.
+        return (sm.get("iso_pass", 0.0) + sm["exact"] + sm["within_1"] + sm["f1"], -sm["mae"])
 
     best = max(grid, key=lambda p: key(run(p, plates)))
     cv = []
@@ -137,7 +139,7 @@ def tune(gold: list[dict], cache_path: str, min_mm: float, review_mm: float) -> 
         for k in (0, 1):
             fit = max(grid, key=lambda p: key(run(p, [g for g in plates if fold(g) != k])))
             cv.append(run(fit, [g for g in plates if fold(g) == k]))
-    estimate = {m: round(float(np.mean([x[m] for x in cv])), 3) for m in ("exact", "within_1", "within_2", "mae", "f1")}
+    estimate = {m: round(float(np.mean([x[m] for x in cv])), 3) for m in ("exact", "within_1", "within_2", "iso_pass", "mae", "f1")}
     c, dc, dm = best
     params = {"conf": round(float(c), 2), "dense_conf": round(float(dc), 2) if dm else 0.0, "dense_min": int(dm)}
     return params, {"fitted": run(best, plates), "cross_validated": estimate}

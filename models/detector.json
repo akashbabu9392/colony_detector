@@ -1,6 +1,6 @@
 {
   "rfdetr": {
-    "conf": 0.75,
+    "conf": 0.45,
     "min_size_px": 0,
     "big_size_px": 0,
     "big_conf": 0.7
